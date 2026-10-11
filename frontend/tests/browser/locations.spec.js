@@ -4,6 +4,75 @@ const fixture = JSON.parse(
   readFileSync(new URL("../fixtures/trip.json", import.meta.url)),
 );
 
+for (const width of [1280, 390]) {
+  test(`suggestions overlay the form without moving fields at ${width}px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    let release;
+    await page.route("**/api/locations/search/**", async (route) => {
+      await new Promise((resolve) => {
+        release = resolve;
+      });
+      await route.fulfill({
+        json: {
+          results: Array.from({ length: 5 }, (_, index) => ({
+            label: `Washington ${index + 1}, DC, USA`,
+            latitude: 38.9,
+            longitude: -77,
+            precision: "locality",
+          })),
+        },
+      });
+    });
+    await page.goto("/");
+    await page.evaluate(() => document.fonts.ready);
+    const panel = page.locator(".planner-panel");
+    const pickup = page.getByLabel("Pickup location", { exact: true });
+    const input = page.getByLabel("Current location", { exact: true });
+    const panelBefore = await panel.boundingBox();
+    const pickupBefore = await pickup.boundingBox();
+    await input.fill("washing");
+    await expect(page.locator(".location-loading")).toBeVisible();
+    expect((await panel.boundingBox()).height).toBeCloseTo(
+      panelBefore.height,
+      1,
+    );
+    expect((await pickup.boundingBox()).y).toBeCloseTo(pickupBefore.y, 1);
+    await expect.poll(() => Boolean(release)).toBe(true);
+    release();
+    await expect(page.locator(".location-dropdown")).toBeVisible();
+    expect((await panel.boundingBox()).height).toBeCloseTo(
+      panelBefore.height,
+      1,
+    );
+    expect((await pickup.boundingBox()).y).toBeCloseTo(pickupBefore.y, 1);
+    expect(
+      await page
+        .locator(".location-results")
+        .evaluate((list) => list.scrollHeight > list.clientHeight),
+    ).toBe(true);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: `.preview/autocomplete-${width}.png`,
+      fullPage: true,
+    });
+    await page.getByRole("heading", { name: "Plan your next trip." }).click();
+    await expect(page.locator(".location-dropdown")).toHaveCount(0);
+    await input.focus();
+    await expect(page.locator(".location-dropdown")).toBeVisible();
+    await input.press("ArrowDown");
+    await page.keyboard.press("Escape");
+    await expect(input).toBeFocused();
+    await expect(page.locator(".location-dropdown")).toHaveCount(0);
+  });
+}
+
 test.beforeEach(async ({ page }) => {
   await page.route("https://tile.openstreetmap.org/**", (route) =>
     route.abort(),

@@ -364,11 +364,71 @@ h1 {
 .location-results {
   list-style: none;
   padding: 0;
-  margin: 8px 0;
-  border: 1px solid #dce3ec;
-  border-radius: 8px;
-  max-height: 280px;
+  margin: 0;
+  max-height: min(260px, 35dvh);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+/* Suggestions overlay the form; loading and results must not move its fields. */
+.location-anchor {
+  position: relative;
+}
+.location-dropdown {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 8px);
+  left: -1px;
+  right: -1px;
+  background: white;
+  border: 1px solid #dce3ec;
+  border-radius: 10px;
+  box-shadow:
+    0 12px 32px #14233824,
+    0 2px 6px #1423380a;
+  overflow: hidden;
+  animation: location-dropdown-in 140ms ease-out;
+}
+.location-dropdown-heading {
+  padding: 10px 12px;
+  color: #526175;
+  background: #f5f7fa;
+  font-size: 12px;
+  line-height: 1.5;
+  border-bottom: 1px solid #dce3ec;
+}
+.location-dropdown .location-dropdown-map {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-top: 1px solid #dce3ec;
+  font-size: 13px;
+}
+.location-field .input-wrap > .location-loading {
+  display: block;
+  color: #2457d6;
+  animation: location-loading-spin 800ms linear infinite;
+}
+@keyframes location-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes location-dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .location-dropdown,
+  .location-field .input-wrap > .location-loading {
+    animation: none;
+  }
 }
 .location-results li + li {
   border-top: 1px solid #dce3ec;

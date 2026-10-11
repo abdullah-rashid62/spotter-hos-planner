@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPin } from "lucide-react";
+import { LoaderCircle, MapPin } from "lucide-react";
 import {
   locationText,
   parseCoordinates,
@@ -9,6 +9,7 @@ import {
 import LocationPicker from "./LocationPicker";
 
 export default function LocationField({ field, value, onChange, error }) {
+  const [expanded, setExpanded] = useState(false);
   const [results, setResults] = useState(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -19,9 +20,14 @@ export default function LocationField({ field, value, onChange, error }) {
   const input = useRef(null);
   const selected = validLocation(value);
   const text = locationText(value);
-  const feedback = busy ? "Finding addresses…" : message || error;
+  const selectionError = Boolean(error && results?.length);
+  const feedback = busy
+    ? "Finding addresses…"
+    : selectionError
+      ? error
+      : message || error;
   const feedbackIsError = Boolean(
-    !busy && (message ? !results?.length : error),
+    !busy && (selectionError || (message ? !results?.length : error)),
   );
   useEffect(() => {
     request.current?.abort();
@@ -99,43 +105,122 @@ export default function LocationField({ field, value, onChange, error }) {
   }
 
   return (
-    <div className="field location-field">
+    <div
+      className="field location-field"
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget))
+          setExpanded(false);
+      }}
+    >
       <label htmlFor={field.name}>{field.label}</label>
-      <div className="input-wrap">
-        <span className={`location-letter letter-${field.letter}`}>
-          {field.letter}
-        </span>
-        <input
-          ref={input}
-          id={field.name}
-          name={field.name}
-          value={text}
-          onChange={(event) => onChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              if (!selected) search();
+      <div className="location-anchor">
+        <div className="input-wrap">
+          <span className={`location-letter letter-${field.letter}`}>
+            {field.letter}
+          </span>
+          <input
+            ref={input}
+            id={field.name}
+            name={field.name}
+            value={text}
+            onFocus={() => setExpanded(true)}
+            onChange={(event) => {
+              setExpanded(true);
+              onChange(event.target.value);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                if (!selected) search();
+              }
+              if (event.key === "ArrowDown" && results?.length) {
+                event.preventDefault();
+                setExpanded(true);
+                requestAnimationFrame(() =>
+                  suggestions.current?.querySelector("button")?.focus(),
+                );
+              }
+              if (event.key === "Escape") {
+                clearTimeout(debounce.current);
+                request.current?.abort();
+                request.current = null;
+                setBusy(false);
+                setExpanded(false);
+                setMessage("");
+              }
+            }}
+            placeholder="Enter full address"
+            autoComplete="off"
+            maxLength={255}
+            aria-invalid={feedbackIsError}
+            aria-describedby={`${field.name}-error`}
+            aria-controls={
+              expanded && results?.length ? `${field.name}-matches` : undefined
             }
-            if (event.key === "ArrowDown" && results?.length) {
-              event.preventDefault();
-              suggestions.current?.querySelector("button")?.focus();
-            }
-            if (event.key === "Escape") {
-              clearTimeout(debounce.current);
-              request.current?.abort();
-              request.current = null;
-              setBusy(false);
-              setResults(null);
-              setMessage("");
-            }
-          }}
-          placeholder="Enter full address"
-          autoComplete="off"
-          maxLength={255}
-          aria-invalid={feedbackIsError}
-          aria-describedby={`${field.name}-error`}
-          aria-controls={results?.length ? `${field.name}-matches` : undefined}
-        />
+          />
+          {busy && (
+            <LoaderCircle
+              className="location-loading"
+              size={16}
+              aria-hidden="true"
+            />
+          )}
+        </div>
+        {expanded && !picker && results?.length > 0 && (
+          <div className="location-dropdown">
+            <div className="location-dropdown-heading" aria-hidden="true">
+              Select a match to verify its map pin
+            </div>
+            <ul
+              ref={suggestions}
+              id={`${field.name}-matches`}
+              className="location-results"
+              aria-label={`${field.label} matches`}
+              onKeyDown={(event) => {
+                const buttons = [
+                  ...suggestions.current.querySelectorAll("button"),
+                ];
+                const index = buttons.indexOf(document.activeElement);
+                if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                  event.preventDefault();
+                  const next = index + (event.key === "ArrowDown" ? 1 : -1);
+                  if (next < 0) input.current?.focus();
+                  else buttons[Math.min(next, buttons.length - 1)]?.focus();
+                }
+                if (event.key === "Escape") {
+                  setMessage("");
+                  input.current?.focus();
+                  setExpanded(false);
+                }
+              }}
+            >
+              {results.map((result, index) => (
+                <li key={index}>
+                  <button
+                    type="button"
+                    onClick={() => setPicker({ initial: result })}
+                  >
+                    <strong>{result.label}</strong>
+                    <span>
+                      {result.precision === "address"
+                        ? "Address match — verify the entrance"
+                        : result.precision === "venue"
+                          ? "Place match — verify the entrance"
+                          : "Approximate match — exact address not confirmed"}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              className="location-map-button location-dropdown-map"
+              onClick={() => setPicker({ initial: null })}
+            >
+              <MapPin size={14} /> Can't find it? Choose on map
+            </button>
+          </div>
+        )}
       </div>
       <div className="location-actions">
         <button
@@ -154,52 +239,17 @@ export default function LocationField({ field, value, onChange, error }) {
       )}
       <p
         id={`${field.name}-error`}
-        className={feedbackIsError ? "field-error" : "location-search-status"}
+        className={
+          busy || (results?.length && !selectionError)
+            ? "sr-only"
+            : feedbackIsError
+              ? "field-error"
+              : "location-search-status"
+        }
         role="status"
       >
         {feedback}
       </p>
-      {results?.length > 0 && (
-        <ul
-          ref={suggestions}
-          id={`${field.name}-matches`}
-          className="location-results"
-          aria-label={`${field.label} matches`}
-          onKeyDown={(event) => {
-            const buttons = [...suggestions.current.querySelectorAll("button")];
-            const index = buttons.indexOf(document.activeElement);
-            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-              event.preventDefault();
-              const next = index + (event.key === "ArrowDown" ? 1 : -1);
-              if (next < 0) input.current?.focus();
-              else buttons[Math.min(next, buttons.length - 1)]?.focus();
-            }
-            if (event.key === "Escape") {
-              setResults(null);
-              setMessage("");
-              input.current?.focus();
-            }
-          }}
-        >
-          {results.map((result, index) => (
-            <li key={index}>
-              <button
-                type="button"
-                onClick={() => setPicker({ initial: result })}
-              >
-                <strong>{result.label}</strong>
-                <span>
-                  {result.precision === "address"
-                    ? "Address match — verify the entrance"
-                    : result.precision === "venue"
-                      ? "Place match — verify the entrance"
-                      : "Approximate match — exact address not confirmed"}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
       {picker && (
         <LocationPicker
           initial={picker.initial}

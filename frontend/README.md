@@ -54,6 +54,9 @@ Node 22.12+ is supported. Production hosting/configuration is separate work.
   Repeated queries reuse Django's shared cache. Arrow Down focuses suggestions;
   arrow keys navigate and Escape dismisses them. Coordinates open the map only
   on Enter, so typing never opens a dialog unexpectedly.
+  Suggestions float beneath the input in a bounded, scrollable dropdown; loading
+  stays inside the input, so neither expands the form. Leaving the field dismisses
+  the dropdown. It includes a map fallback and respects reduced motion.
   Users select a candidate and confirm its map
   point. Broad matches are labeled approximate, not treated as exact addresses.
 - Coordinates bypass search. A map picker supports click/touch and keyboard
