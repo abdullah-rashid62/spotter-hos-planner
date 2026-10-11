@@ -1,0 +1,48 @@
+// A presentation fixture, not a routing or scheduling implementation.
+// Keep these events behind one data boundary for the future Django adapter.
+export const exampleInputs = {
+  current_location: 'Chicago, IL',
+  pickup_location: 'Indianapolis, IN',
+  dropoff_location: 'Atlanta, GA',
+  cycle_used_hours: '24',
+};
+
+export const places = ['Chicago, IL', 'Indianapolis, IN', 'Atlanta, GA', 'Nashville, TN', 'Chattanooga, TN', 'Dallas, TX', 'Denver, CO'];
+
+export const mockTrip = {
+  id: 'SP-1024',
+  source: 'mock',
+  inputs: exampleInputs,
+  startDate: '2026-10-12',
+  startHour: 6,
+  timezone: 'CDT (UTC−05:00)',
+  distanceMiles: 726,
+  elapsedHours: 26,
+  // Representative coordinates, deliberately not presented as road navigation.
+  geometry: [
+    [41.8781, -87.6298], [41.58, -87.33], [41.16, -87.26],
+    [40.75, -87.08], [40.42, -86.87], [40.05, -86.47],
+    [39.7684, -86.1581], [39.2, -85.92], [38.75, -85.82],
+    [38.2527, -85.7585], [37.71, -85.86], [37.02, -86.38],
+    [36.1627, -86.7816], [35.85, -86.39], [35.48, -86.08],
+    [35.24, -85.84], [35.0456, -85.3097], [34.76, -84.97],
+    [34.2, -84.8], [33.95, -84.55], [33.749, -84.388],
+  ],
+  waypoints: [
+    { label: 'Chicago, IL', kind: 'start', position: [41.8781, -87.6298], eventId: 'drive-1', letter: 'A' },
+    { label: 'Indianapolis, IN', kind: 'pickup', position: [39.7684, -86.1581], eventId: 'pickup', letter: 'B' },
+    { label: 'Nashville, TN', kind: 'fuel', position: [36.1627, -86.7816], eventId: 'fuel', letter: '3' },
+    { label: 'Chattanooga, TN', kind: 'rest', position: [35.0456, -85.3097], eventId: 'rest', letter: '4' },
+    { label: 'Atlanta, GA', kind: 'dropoff', position: [33.749, -84.388], eventId: 'dropoff', letter: 'C' },
+  ],
+  events: [
+    { id: 'drive-1', activity: 'drive', status: 'driving', start: 0, end: 3.5, miles: 185, title: 'Drive to pickup', location: 'Chicago, IL → Indianapolis, IN', detail: 'Head southeast toward your pickup.', position: [40.42, -86.87] },
+    { id: 'pickup', activity: 'pickup', status: 'on_duty', start: 3.5, end: 4.5, miles: 0, title: 'Pickup & loading', location: 'Indianapolis, IN', detail: 'One hour reserved for loading. This non-driving period also provides a driving break.', position: [39.7684, -86.1581] },
+    { id: 'drive-2', activity: 'drive', status: 'driving', start: 4.5, end: 9.5, miles: 288, title: 'Onward to Nashville', location: 'Indianapolis, IN → Nashville, TN', detail: 'Continue south through Kentucky into Tennessee.', position: [38.2527, -85.7585] },
+    { id: 'fuel', activity: 'fuel', status: 'on_duty', start: 9.5, end: 10, miles: 0, title: 'Fuel & driving break', location: 'Nashville, TN', detail: 'A planned 30-minute fueling stop. Mock location; no specific fuel station is selected.', position: [36.1627, -86.7816] },
+    { id: 'drive-3', activity: 'drive', status: 'driving', start: 10, end: 12.5, miles: 135, title: 'Drive to overnight stop', location: 'Nashville, TN → Chattanooga, TN', detail: 'Finish the day’s driving in Chattanooga.', position: [35.48, -86.08] },
+    { id: 'rest', activity: 'daily_rest', status: 'off_duty', start: 12.5, end: 22.5, miles: 0, title: 'Overnight rest', location: 'Chattanooga, TN', detail: '10 hours off duty after 11 hours of driving in this example. Parking availability is not verified.', position: [35.0456, -85.3097] },
+    { id: 'drive-4', activity: 'drive', status: 'driving', start: 22.5, end: 25, miles: 118, title: 'Final stretch to Atlanta', location: 'Chattanooga, TN → Atlanta, GA', detail: 'Continue to the delivery destination after overnight rest.', position: [34.2, -84.8] },
+    { id: 'dropoff', activity: 'dropoff', status: 'on_duty', start: 25, end: 26, miles: 0, title: 'Drop-off & unloading', location: 'Atlanta, GA', detail: 'One hour reserved for unloading. Your planned trip ends here.', position: [33.749, -84.388] },
+  ],
+};
