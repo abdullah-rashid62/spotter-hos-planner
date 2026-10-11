@@ -38,12 +38,12 @@ CACHES = {
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(ai(ddi3z5%4go91re*#t%2h=gqmtynt5n0n(fw8gevy115z2d'
+# Security configuration
+SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
+DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() in (
+    "true", "1", "yes"
+)
 ALLOWED_HOSTS = [
     host.strip()
     for host in os.getenv(
