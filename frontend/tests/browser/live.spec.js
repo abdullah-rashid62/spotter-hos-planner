@@ -9,16 +9,19 @@ test("live Django and ORS trip flows through the Vite proxy", async ({
   );
   test.setTimeout(150000);
   await page.goto("/");
+  await page.getByRole("button", { name: "Try an example" }).click();
   const responsePromise = page.waitForResponse(
     (response) => response.url().endsWith("/api/trips/plan/"),
     { timeout: 125000 },
   );
-  await page.getByRole("button", { name: "Generate trip plan" }).click();
+  await page
+    .getByRole("button", { name: /^(Plan route|Update route)$/ })
+    .click();
   const response = await responsePromise;
   expect(response.status()).toBe(200);
   const body = await response.json();
   expect(body.route.source).toBe("openrouteservice");
-  await expect(page.getByText("Trip plan ready.")).toBeVisible();
+  await expect(page.locator(".route-heading")).toBeVisible();
   await expect(page.locator(".summary-grid")).toContainText(
     Math.round(body.route.distance_meters / 1609.344).toLocaleString(),
   );

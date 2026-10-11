@@ -22,7 +22,7 @@ npm run dev
 ```
 
 Open http://127.0.0.1:5173. Vite proxies `/api` requests to Django on port 8000.
-The example action fills the four inputs; Generate trip plan requests a real
+The example action fills the four inputs; Plan route requests a real
 route. No trip is generated automatically on page load.
 
 `npm run build` creates `dist/`. Production hosting must serve the frontend and
@@ -32,6 +32,11 @@ Node 22.12+ is supported. Production hosting/configuration is separate work.
 
 ## Behavior and data
 
+- The public homepage opens with a centered, empty location form and no account
+  controls. After planning, results appear on the left and the form on the right.
+  Route illustrations, the form transition, and map drawing respect reduced motion.
+- Planning assumptions and secondary trip details expand on demand. Loading
+  feedback occupies the example action's space to keep the form steady.
 - `src/lib/api.js` handles the request, provider errors and field validation.
   Duplicate submissions are blocked and requests time out after two minutes.
 - Inputs survive errors/retries. Editing inputs marks an existing result stale;
@@ -48,7 +53,7 @@ Node 22.12+ is supported. Production hosting/configuration is separate work.
   DST sheets use their actual 23/25 elapsed hours. Repeated hours have distinct
   graph labels with an explanation showing CDT/CST; spring's skipped hour is
   omitted. Off-duty padding is dashed and labeled as assumed.
-- Mobile opens with the form, then switches to Itinerary after generation.
+- Mobile opens with the form, then switches to Stops after generation.
   Logs keep a contained horizontal graph and fixed duty labels.
 - Print logs prints every returned day, including remarks and missing identity
   fields, and supports the browser's Save as PDF. These are planned sheets,

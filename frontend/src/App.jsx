@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ArrowDownToLine,
   ArrowRight,
@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Clock3,
   FileText,
-  FlaskConical,
   List,
   Map,
   MapPinned,
@@ -20,19 +19,23 @@ import TripForm from "./components/TripForm";
 import RouteMap from "./components/RouteMap";
 import Itinerary from "./components/Itinerary";
 import DailyLog from "./components/DailyLog";
-import { exampleInputs } from "./data/mockTrip";
 import { dayDate, duration, validateInputs } from "./lib/timeline";
 
 import { requestTrip } from "./lib/api";
 import { adaptTrip, timestamp } from "./lib/trip";
 const tabs = [
-  { id: "itinerary", label: "Itinerary", icon: List },
+  { id: "itinerary", label: "Stops", icon: List },
   { id: "map", label: "Map", icon: Map },
   { id: "logs", label: "Daily logs", icon: FileText },
 ];
 
 export default function App() {
-  const [inputs, setInputs] = useState({ ...exampleInputs });
+  const [inputs, setInputs] = useState({
+    current_location: "",
+    pickup_location: "",
+    dropoff_location: "",
+    cycle_used_hours: "0",
+  });
   const [submittedInputs, setSubmittedInputs] = useState(null);
   const [trip, setTrip] = useState(null);
   const [requestError, setRequestError] = useState("");
@@ -45,6 +48,7 @@ export default function App() {
   const [notice, setNotice] = useState("");
   const [mobileEditing, setMobileEditing] = useState(true);
   const formRef = useRef(null);
+  const formPosition = useRef(null);
   const resultsRef = useRef(null);
   const mapSection = useRef(null);
   const request = useRef(null);
@@ -56,6 +60,30 @@ export default function App() {
   const day = days[dayIndex];
 
   useEffect(() => () => request.current?.abort(), []);
+
+  // Move the existing form into its results position, preserving its inputs.
+  useLayoutEffect(() => {
+    const before = formPosition.current;
+    formPosition.current = null;
+    if (
+      !before ||
+      !formRef.current ||
+      window.matchMedia("(prefers-reduced-motion: reduce), (max-width: 760px)")
+        .matches
+    )
+      return;
+    const after = formRef.current.getBoundingClientRect();
+    const animation = formRef.current.animate(
+      [
+        {
+          transform: `translate(${before.left - after.left}px, ${before.top - after.top}px)`,
+        },
+        { transform: "translate(0, 0)" },
+      ],
+      { duration: 420, easing: "cubic-bezier(.22, 1, .36, 1)" },
+    );
+    return () => animation.cancel();
+  }, [trip]);
 
   async function generate(event) {
     event.preventDefault();
@@ -72,11 +100,11 @@ export default function App() {
     const deadline = setTimeout(() => controller.abort(), 120000);
     setLoading(true);
     setRequestError("");
-    setNotice(
-      "Finding your route and preparing the schedule. This may take a minute.",
-    );
+    setNotice("Finding your route. This may take a minute.");
     try {
       const result = adaptTrip(await requestTrip(submitted, controller.signal));
+      if (!trip)
+        formPosition.current = formRef.current?.getBoundingClientRect();
       setTrip(result);
       setSubmittedInputs(submitted);
       setDayIndex(0);
@@ -132,8 +160,11 @@ export default function App() {
 
   return (
     <>
-      <a className="skip-link" href="#trip-results">
-        Skip to trip results
+      <a
+        className="skip-link"
+        href={trip ? "#trip-results" : "#current_location"}
+      >
+        {trip ? "Skip to trip results" : "Skip to trip form"}
       </a>
       <header className="topbar">
         <a className="brand" href="#" aria-label="Spotter trip planner">
@@ -142,30 +173,19 @@ export default function App() {
           </span>
           spotter<span className="brand-period">.</span>
         </a>
-        <span className="header-divider" />
-        <span className="product-name">Trip planner</span>
-        <div className="header-right">
-          <span className="preview-pill">
-            <FlaskConical size={13} /> Trip planner
-          </span>
-          <span className="avatar" aria-label="Demo workspace">
-            S
-          </span>
-        </div>
       </header>
-      <main className="app-shell">
-        <div className="page-heading">
-          <div>
-            <div className="breadcrumb">
-              WORKSPACE <ChevronRight size={12} /> TRIP PLANNER
+      <main className={`app-shell ${trip ? "has-trip" : "landing"}`}>
+        {!trip && (
+          <>
+            <RouteIllustration />
+            <div className="page-heading">
+              <h1>
+                Plan your next <span>trip.</span>
+              </h1>
+              <p>Your route, stops, and daily logs. All in one go.</p>
             </div>
-            <h1>A better plan. A smoother journey.</h1>
-            <p>Map the miles. Plan the stops. See the whole trip.</p>
-          </div>
-          <span className="rule-badge">
-            <Truck size={16} /> Property-carrying <span /> 70 hrs / 8 days
-          </span>
-        </div>
+          </>
+        )}
         <div className={`workspace ${mobileEditing ? "mobile-editing" : ""}`}>
           <TripForm
             inputs={inputs}
@@ -175,6 +195,10 @@ export default function App() {
             loading={loading}
             formRef={formRef}
             assumptions={trip?.planning.assumptions}
+            hasTrip={Boolean(trip)}
+            requestError={requestError}
+            notice={notice}
+            onRetry={generate}
           />
           <div
             className="results"
@@ -183,37 +207,10 @@ export default function App() {
             tabIndex={-1}
             aria-busy={loading}
           >
-            {requestError && (
-              <div className="update-banner request-error" role="alert">
-                {requestError} {trip && "The previous plan remains below."}
-                <button
-                  className="button secondary"
-                  disabled={loading}
-                  onClick={generate}
-                >
-                  Retry trip plan
-                </button>
-              </div>
-            )}
-            {!trip && (
-              <div className="empty-state">
-                <MapPinned size={40} />
-                <h2>Where are you headed?</h2>
-                <p>
-                  Enter your trip details to generate a route, planned stops,
-                  and daily logs.
-                </p>
-                <p role="status">{notice}</p>
-              </div>
-            )}
             {trip && (
               <>
                 <div className="route-heading">
                   <div>
-                    <div className="eyebrow">
-                      YOUR TRIP OVERVIEW{" "}
-                      <span className="trip-id">/ PLANNED</span>
-                    </div>
                     <h2>
                       {trip.labels.start} <ArrowRight size={20} />{" "}
                       {trip.labels.end}{" "}
@@ -242,23 +239,11 @@ export default function App() {
                     {mobileEditing ? "Close" : "Edit trip"}
                   </button>
                 </div>
-                <div className="sample-banner">
-                  <FlaskConical size={15} />
-                  <span>
-                    <strong>Planned trip.</strong> Fuel and rest positions are
-                    estimates, not verified facilities. Locations use the top
-                    search match; review the resolved addresses above.
-                  </span>
-                </div>
                 {dirty && (
                   <div className="update-banner" role="status">
-                    Results are out of date. Generate a new trip plan to apply
-                    your changes.
+                    Results are out of date. Plan again to apply your changes.
                   </div>
                 )}
-                <div className="notice" role="status">
-                  {notice}
-                </div>
                 <div
                   className={`result-content ${loading ? "is-loading" : ""}`}
                 >
@@ -268,37 +253,16 @@ export default function App() {
                       label="Total distance"
                       value={Math.round(trip.distanceMiles).toLocaleString()}
                       unit="mi"
-                      detail="Across 2 route legs"
                     />
                     <Summary
                       icon={Truck}
                       label="Driving time"
                       value={duration(drivingHours)}
-                      detail="With planned breaks"
                     />
                     <Summary
                       icon={Clock3}
                       label="Total trip"
                       value={duration(trip.elapsedHours)}
-                      detail="Including stops & rest"
-                    />
-                    <Summary
-                      icon={FlagIcon}
-                      label="Delivery complete"
-                      value={
-                        timestamp(trip.planning.end_at, trip.timezone, {
-                          timeZoneName: undefined,
-                        }).split(" ")[0]
-                      }
-                      unit={
-                        timestamp(trip.planning.end_at, trip.timezone, {
-                          timeZoneName: undefined,
-                        }).split(" ")[1]
-                      }
-                      detail={timestamp(trip.planning.end_at, trip.timezone, {
-                        month: "short",
-                        day: "numeric",
-                      })}
                     />
                   </div>
                   <div className="mobile-tabs" aria-label="Trip views">
@@ -354,7 +318,7 @@ export default function App() {
                           aria-pressed={tab !== "logs"}
                           onClick={() => changeTab("itinerary")}
                         >
-                          <List size={16} /> Trip itinerary
+                          <List size={16} /> Stops
                         </button>
                         <button
                           aria-pressed={tab === "logs"}
@@ -439,30 +403,38 @@ export default function App() {
                     )}
                   </section>
                 </div>
-                <div className="results-footer">
-                  <span>
-                    Departure:{" "}
-                    {timestamp(trip.planning.start_at, trip.timezone, {
+                <details className="trip-details">
+                  <summary>Trip details &amp; estimates</summary>
+                  <p>
+                    Fuel and rest locations are estimates, not verified
+                    facilities. Locations use the top search match; review the
+                    resolved addresses.
+                  </p>
+                  <p>
+                    Delivery complete:{" "}
+                    {timestamp(trip.planning.end_at, trip.timezone, {
                       month: "short",
                       day: "numeric",
-                      year: "numeric",
                     })}
-                  </span>
-                  <span>
-                    Planned duty, not actual records · Not a certified ELD
-                  </span>
-                </div>
+                  </p>
+                  <div className="results-footer">
+                    <span>
+                      Departure:{" "}
+                      {timestamp(trip.planning.start_at, trip.timezone, {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </span>
+                    <span>
+                      Planned duty, not actual records · Not a certified ELD
+                    </span>
+                  </div>
+                </details>
               </>
             )}
           </div>
         </div>
-        <footer className="page-footer">
-          <span>
-            spotter<span className="brand-period">.</span>
-          </span>
-          <p>A little planning goes a long way.</p>
-          <span>TRIP PLANNER</span>
-        </footer>
       </main>
       <div className="print-sheets">
         {days.map((printDay) => (
@@ -480,9 +452,6 @@ export default function App() {
   );
 }
 
-function FlagIcon(props) {
-  return <MapPinned {...props} />;
-}
 function Summary({ icon: Icon, label, value, unit, detail }) {
   return (
     <div className="summary-card">
@@ -494,7 +463,61 @@ function Summary({ icon: Icon, label, value, unit, detail }) {
         {value}
         <span>{unit}</span>
       </div>
-      <div className="summary-detail">{detail}</div>
+      {detail && <div className="summary-detail">{detail}</div>}
+    </div>
+  );
+}
+
+function RouteIllustration() {
+  return (
+    <div className="route-art" aria-hidden="true">
+      <svg viewBox="0 0 1440 800" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <pattern
+            id="map-grid"
+            width="64"
+            height="64"
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d="M 64 0 L 0 0 0 64"
+              fill="none"
+              stroke="#dce3ec"
+              strokeWidth=".6"
+            />
+          </pattern>
+        </defs>
+        <rect width="1440" height="800" fill="url(#map-grid)" />
+        <g fill="none" stroke="#e0e7ef" strokeWidth="18">
+          <path d="M-40 550 L240 270 Q280 230 280 160 L280 -30 M-30 680 L430 680 Q500 680 500 750 L500 850" />
+          <path d="M1040 -40 L1040 180 Q1040 230 1100 230 L1480 230 M1120 850 L1120 520 Q1120 470 1190 470 L1480 470" />
+        </g>
+        <path
+          className="illustrated-route"
+          d="M-30 600 L180 600 Q240 600 240 540 L240 410 Q240 350 300 350 L420 350 M1020 350 L1160 350 Q1220 350 1220 290 L1220 150 Q1220 100 1270 100 L1470 100"
+          fill="none"
+          stroke="#2457d6"
+          strokeWidth="3"
+          pathLength="1"
+        />
+        <g fill="white" stroke="#2457d6" strokeWidth="3">
+          <circle cx="180" cy="600" r="9" />
+          <circle cx="1220" cy="180" r="9" />
+        </g>
+        <g
+          fill="#526175"
+          fontSize="12"
+          fontFamily="Inter, sans-serif"
+          letterSpacing="2"
+        >
+          <text x="145" y="636">
+            DEPARTURE
+          </text>
+          <text x="1244" y="185">
+            ARRIVAL
+          </text>
+        </g>
+      </svg>
     </div>
   );
 }

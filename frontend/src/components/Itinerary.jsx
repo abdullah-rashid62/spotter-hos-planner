@@ -25,13 +25,6 @@ export default function Itinerary({ trip, day, selectedId, onSelect, onMap }) {
   const segments = day.segments.filter((segment) => !segment.padding);
   return (
     <div className="itinerary">
-      <div className="itinerary-heading">
-        <div>
-          <h3>Your day on the road</h3>
-          <p>Every drive, stop, and well-earned rest.</p>
-        </div>
-        <span className="quiet-tag">{segments.length} activities</span>
-      </div>
       <div className="event-list">
         {segments.map((event, index) => {
           const Icon = activityIcons[event.activity] || Coffee;

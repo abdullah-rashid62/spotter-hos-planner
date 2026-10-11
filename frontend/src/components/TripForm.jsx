@@ -2,10 +2,8 @@ import {
   ArrowRight,
   ChevronDown,
   CircleHelp,
-  LoaderCircle,
   MapPin,
   RotateCcw,
-  Sparkles,
 } from "lucide-react";
 import { exampleInputs, places } from "../data/mockTrip";
 
@@ -28,17 +26,21 @@ export default function TripForm({
   loading,
   formRef,
   assumptions,
+  hasTrip,
+  requestError,
+  notice,
+  onRetry,
 }) {
   function change(event) {
     setInputs({ ...inputs, [event.target.name]: event.target.value });
   }
   return (
     <aside className="planner-panel" ref={formRef}>
-      <div className="panel-title">
-        <div className="eyebrow">THE ROAD STARTS HERE</div>
-        <h2>Plan your trip</h2>
-        <p>A few details. A clearer road ahead.</p>
-      </div>
+      {hasTrip && (
+        <div className="panel-title">
+          <h2>Your trip</h2>
+        </div>
+      )}
       <form noValidate onSubmit={onSubmit}>
         <div className="location-fields">
           {fields.map((field) => (
@@ -111,23 +113,44 @@ export default function TripForm({
           type="submit"
           disabled={loading}
         >
-          {loading ? (
-            <LoaderCircle className="spin" size={18} />
-          ) : (
-            <Sparkles size={17} />
-          )}{" "}
-          {loading ? "Planning your trip…" : "Generate trip plan"}
+          {loading && (
+            <span className="route-loader" aria-hidden="true">
+              <span />
+            </span>
+          )}
+          {loading
+            ? "Planning route…"
+            : hasTrip
+              ? "Update route"
+              : "Plan route"}
           {!loading && <ArrowRight size={18} />}
         </button>
-        <button
-          className="example-button"
-          type="button"
-          onClick={() => setInputs({ ...exampleInputs })}
-          disabled={loading}
-        >
-          <RotateCcw size={14} /> Load example trip
-        </button>
+        <div className={`form-secondary ${loading ? "is-planning" : ""}`}>
+          <button
+            className="example-button"
+            type="button"
+            onClick={() => setInputs({ ...exampleInputs })}
+            disabled={loading}
+          >
+            <RotateCcw size={14} /> Try an example
+          </button>
+          <p className={loading ? "planning-status" : "sr-only"} role="status">
+            {notice}
+          </p>
+        </div>
       </form>
+      {requestError && (
+        <div className="update-banner request-error" role="alert">
+          <p>{requestError}</p>
+          <button
+            className="button secondary"
+            disabled={loading}
+            onClick={onRetry}
+          >
+            Retry trip plan
+          </button>
+        </div>
+      )}
       <details className="assumptions">
         <summary>
           Planning assumptions <ChevronDown size={15} />
@@ -156,22 +179,6 @@ export default function TripForm({
           </p>
         )}
       </details>
-      <div className="sidebar-note">
-        <span className="note-icon">
-          <MapPin size={19} />
-        </span>
-        <div>
-          <strong>One trip. The whole picture.</strong>
-          <p>
-            Your route, stops, and daily logs.
-            <br />
-            All connected in one place.
-          </p>
-        </div>
-      </div>
-      <div className="sidebar-footer">
-        <span className="small-dot" /> Built for the road ahead
-      </div>
     </aside>
   );
 }

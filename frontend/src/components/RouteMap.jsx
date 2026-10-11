@@ -5,6 +5,8 @@ import { Expand, Layers, MapPin, Navigation, X } from "lucide-react";
 export default function RouteMap({ trip, selectedId, onSelect, visible }) {
   const container = useRef(null);
   const mapRef = useRef(null);
+  const routeLine = useRef(null);
+  const revealed = useRef(false);
   const markers = useRef(new Map());
   const selectRef = useRef(onSelect);
   const [tileError, setTileError] = useState(false);
@@ -37,11 +39,12 @@ export default function RouteMap({ trip, selectedId, onSelect, visible }) {
       weight: 8,
       opacity: 0.95,
     }).addTo(map);
-    L.polyline(trip.geometry, {
+    routeLine.current = L.polyline(trip.geometry, {
       color: "#2457d6",
       weight: 4,
       opacity: 0.95,
     }).addTo(map);
+    revealed.current = false;
     for (const point of trip.waypoints) {
       const icon = L.divIcon({
         className: "map-marker-shell",
@@ -73,8 +76,45 @@ export default function RouteMap({ trip, selectedId, onSelect, visible }) {
       markers.current.clear();
       map.remove();
       mapRef.current = null;
+      routeLine.current = null;
     };
   }, [trip]);
+
+  useEffect(() => {
+    if (!visible || revealed.current) return;
+    // Measure after Leaflet has projected the route into the visible viewport.
+    let animation;
+    const frame = requestAnimationFrame(() => {
+      const path = routeLine.current?.getElement();
+      if (!path) return;
+      revealed.current = true;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const length = path.getTotalLength();
+      animation = path.animate(
+        [
+          { strokeDasharray: `${length} ${length}`, strokeDashoffset: length },
+          { strokeDasharray: `${length} ${length}`, strokeDashoffset: 0 },
+        ],
+        { duration: 900, easing: "ease-in-out" },
+      );
+      for (const marker of markers.current.values()) {
+        marker
+          .getElement()
+          ?.querySelector(".map-marker")
+          ?.animate(
+            [
+              { opacity: 0, transform: "scale(.6)" },
+              { opacity: 1, transform: "scale(1)" },
+            ],
+            { duration: 220, delay: 650, fill: "backwards" },
+          );
+      }
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      animation?.cancel();
+    };
+  }, [trip, visible]);
 
   useEffect(() => {
     const map = mapRef.current;

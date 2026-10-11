@@ -17,10 +17,62 @@ async function generate(page, body = fixture) {
     route.fulfill({ json: body }),
   );
   await page.goto("/");
-  await expect(page.getByText("Where are you headed?")).toBeVisible();
-  await page.getByRole("button", { name: "Generate trip plan" }).click();
-  await expect(page.getByText("Trip plan ready.")).toBeVisible();
+  await page.getByRole("button", { name: "Try an example" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Plan your next trip." }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: /^(Plan route|Update route)$/ })
+    .click();
+  await expect(page.locator(".route-heading")).toBeVisible();
 }
+
+test("public landing centers the form and respects reduced motion", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.route("**/api/trips/plan/", (route) =>
+    route.fulfill({ json: fixture }),
+  );
+  await page.goto("/");
+  await expect(page.getByLabel("Current location")).toHaveValue("");
+  await expect(page.locator(".avatar, .breadcrumb, .preview-pill")).toHaveCount(
+    0,
+  );
+  const form = await page.locator(".planner-panel").boundingBox();
+  expect(Math.abs(form.x + form.width / 2 - 720)).toBeLessThan(2);
+  await page.screenshot({
+    path: ".preview/planner-landing.png",
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "Plan route", exact: true }).click();
+  await expect(page.getByLabel("Current location")).toBeFocused();
+  await page.getByRole("button", { name: "Try an example" }).click();
+  await page.getByRole("button", { name: "Plan route", exact: true }).click();
+  await expect(page.locator(".route-heading")).toBeVisible();
+  const results = await page.locator(".results").boundingBox();
+  const moved = await page.locator(".planner-panel").boundingBox();
+  expect(moved.x).toBeGreaterThan(results.x + results.width);
+  expect(
+    await page
+      .locator(".planner-panel")
+      .evaluate((element) => element.getAnimations().length),
+  ).toBe(0);
+  await page.screenshot({
+    path: ".preview/planner-results.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Plan route", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: ".preview/planner-landing-mobile.png",
+    fullPage: true,
+  });
+});
 
 test("response drives desktop map, itinerary, daily logs and print", async ({
   page,
@@ -47,7 +99,9 @@ test("response drives desktop map, itinerary, daily logs and print", async ({
     `${Math.round(fixture.daily_logs[1].miles)} mi`,
   );
   await page.getByLabel("Current cycle used").fill("71");
-  await page.getByRole("button", { name: "Generate trip plan" }).click();
+  await page
+    .getByRole("button", { name: /^(Plan route|Update route)$/ })
+    .click();
   await expect(
     page.getByText("Enter a number between 0 and 70 hours."),
   ).toBeVisible();
@@ -112,7 +166,9 @@ test("mobile form, map and graph remain readable without page overflow", async (
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(labels).toBeVisible();
-  const container = await page.locator(".schedule-panel .log-graph-wrap").boundingBox();
+  const container = await page
+    .locator(".schedule-panel .log-graph-wrap")
+    .boundingBox();
   expect((await labels.boundingBox()).x).toBe(container.x);
   await page.screenshot({
     path: ".preview/connected-mobile.png",
@@ -134,9 +190,12 @@ test("one pending submission; edits stay stale and retry preserves inputs", asyn
     await route.fulfill({ json: fixture });
   });
   await page.goto("/");
-  await page.getByRole("button", { name: "Generate trip plan" }).click();
+  await page.getByRole("button", { name: "Try an example" }).click();
+  await page
+    .getByRole("button", { name: /^(Plan route|Update route)$/ })
+    .click();
   await expect(
-    page.getByRole("button", { name: "Planning your trip" }),
+    page.getByRole("button", { name: "Planning route" }),
   ).toBeDisabled();
   await page.getByLabel("Current location").fill("Dallas, TX");
   await page.getByLabel("Current location").press("Enter");
@@ -152,7 +211,9 @@ test("one pending submission; edits stay stale and retry preserves inputs", asyn
       json: { detail: "Routing is temporarily unavailable." },
     }),
   );
-  await page.getByRole("button", { name: "Generate trip plan" }).click();
+  await page
+    .getByRole("button", { name: /^(Plan route|Update route)$/ })
+    .click();
   await expect(page.getByRole("alert")).toContainText(
     "Routing is temporarily unavailable.",
   );
@@ -183,7 +244,10 @@ test("field validation and network errors are recoverable", async ({
     }),
   );
   await page.goto("/");
-  await page.getByRole("button", { name: "Generate trip plan" }).click();
+  await page.getByRole("button", { name: "Try an example" }).click();
+  await page
+    .getByRole("button", { name: /^(Plan route|Update route)$/ })
+    .click();
   await expect(page.locator("#pickup_location-error")).toContainText(
     "Location not found",
   );
