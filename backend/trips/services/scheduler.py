@@ -129,7 +129,7 @@ def validate_legs(legs):
             raise ValueError("A zero-distance leg must have zero duration.")
 
 
-def add_event(trip, activity, duty_status, seconds, leg_type, distance=0):
+def add_event(trip, activity, duty_status, seconds, leg_type, distance=0, reason_codes=None):
     # All trip progress lives in one dictionary. No nested function/nonlocal.
     # Updating its contents changes the same dictionary the caller holds.
     if seconds <= 0:
@@ -149,6 +149,7 @@ def add_event(trip, activity, duty_status, seconds, leg_type, distance=0):
         "activity": activity,
         "duty_status": duty_status,
         "leg": leg_type,
+        "reason_codes": reason_codes or [],
         "start_second": start_second,
         "end_second": start_second + seconds,
         "start_route_meters": start_distance,
@@ -218,7 +219,18 @@ def schedule_trip(legs, cycle_used):
             # continue means restart this loop and recheck the updated state.
             rest_reason, rest_seconds = required_rest(driver)
             if rest_reason is not None:
-                add_event(trip, rest_reason, "off_duty", rest_seconds, leg_type)
+                # Capture the blocking allowances before rest resets them.
+                reason_codes = []
+                for field, limit, code in (
+                    ('cycle_used', CYCLE_LIMIT_SECONDS, 'cycle_limit'),
+                    ('driving_used', DRIVING_LIMIT_SECONDS, 'daily_driving_limit'),
+                    ('window_elapsed', WINDOW_LIMIT_SECONDS, 'duty_window_limit'),
+                    ('driving_since_break', BREAK_LIMIT_SECONDS, 'driving_break_limit'),
+                ):
+                    if driver[field] >= limit - TIME_EPSILON:
+                        reason_codes.append(code)
+                add_event(trip, rest_reason, "off_duty", rest_seconds, leg_type,
+                          reason_codes=reason_codes)
                 continue
 
             # 3. Drive until arrival, a driving limit, or a fueling stop.

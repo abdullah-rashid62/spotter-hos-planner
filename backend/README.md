@@ -32,7 +32,20 @@ The response includes:
   **[longitude, latitude]**, not Leaflet's latitude/longitude order.
 - Route distance and driving duration totals. `elapsed_seconds` also includes
   handling, breaks, and rest from the scheduler.
-- A shared `events` timeline with elapsed seconds and route meters.
+- A shared `events` timeline with elapsed seconds and route meters, IDs,
+  offset-aware `start_at` / `end_at`, start/end coordinates in longitude/latitude
+  order, location descriptions, and reasons for scheduled activities.
+- `planning` metadata with departure, log timezone, and disclosed assumptions.
+  Departure defaults to tomorrow at 08:00 in America/Chicago. This is a fixed
+  demo log timezone, not a supplied or inferred home-terminal timezone.
+  Event IDs are stable within a generated plan and its derived logs, not global
+  identifiers across different trips.
+
+Event positions use distance along each route leg's polyline, normalized to its
+provider distance. Handling uses the routed endpoint, which may differ from the
+geocoded address. Rest/fuel positions are estimates, not verified facilities.
+Calendar timestamps advance in UTC before conversion to the log timezone, so
+elapsed driving/rest durations remain correct across daylight-saving changes.
 
 Requests have a 20-second timeout per provider call. Validation and unsupported
 routes return 400; unavailable/configuration/quota failures return 503 with a
@@ -40,8 +53,8 @@ safe message. Provider bodies and authentication values are not returned.
 
 ## Remaining limitations
 
-`status` remains `prototype` and `daily_logs` remains empty. Calendar logs and
-geographic placement of scheduled events are not implemented. Fuel/rest events
+`status` remains `prototype` and `daily_logs` remains empty. Calendar daily-log
+splitting is not implemented yet. Fuel/rest events
 are not verified truck facilities. HGV routing uses provider defaults without
 specific vehicle dimensions; no claim of vehicle-specific clearance is made.
 The scheduler assumes fresh daily allowances, a full fuel range, 30-minute
