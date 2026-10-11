@@ -8,13 +8,15 @@ import {
   Package,
   Truck,
 } from "lucide-react";
-import { clockTime, duration } from "../lib/timeline";
+import { duration } from "../lib/timeline";
+import { timestamp } from "../lib/trip";
 
 export const activityIcons = {
   drive: Truck,
   pickup: Package,
   fuel: Fuel,
   daily_rest: Moon,
+  cycle_restart: Moon,
   dropoff: Flag,
   driving_break: Coffee,
 };
@@ -40,8 +42,8 @@ export default function Itinerary({ trip, day, selectedId, onSelect, onMap }) {
               className={`event-row ${selected ? "selected" : ""} status-${event.status}`}
             >
               <div className="event-time">
-                <strong>{clockTime(event.start)}</strong>
-                <span>{clockTime(event.end)}</span>
+                <strong>{timestamp(event.start_at, trip.timezone)}</strong>
+                <span>{timestamp(event.end_at, trip.timezone)}</span>
               </div>
               <div className="event-track">
                 <span className="event-icon">
@@ -64,6 +66,12 @@ export default function Itinerary({ trip, day, selectedId, onSelect, onMap }) {
                 {selected && (
                   <div className="event-detail">
                     <p>{event.detail}</p>
+                    {event.continues_from_previous_day && (
+                      <p>Continued from the previous day.</p>
+                    )}
+                    {event.continues_into_next_day && (
+                      <p>Continues into the next day.</p>
+                    )}
                     <button onClick={() => onMap(event.id)}>
                       <MapPin size={13} /> View on map{" "}
                       <ArrowUpRight size={13} />
@@ -84,9 +92,9 @@ export default function Itinerary({ trip, day, selectedId, onSelect, onMap }) {
       </div>
       <div className="day-end">
         <span className="small-dot" />
-        {day.index === 0
-          ? "Rest continues into the next day. Your daily log splits at midnight."
-          : "You’ve arrived. Unload, wrap up, and enjoy the road behind you."}
+        {day.index < trip.days.length - 1
+          ? "The trip continues on the next daily sheet. Logs split at local midnight."
+          : "Trip complete after unloading. Remaining daily-log time is assumed off duty."}
       </div>
     </div>
   );

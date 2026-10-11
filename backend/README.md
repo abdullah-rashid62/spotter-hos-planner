@@ -75,8 +75,8 @@ transition days contain 82,800 or 90,000 elapsed seconds. `clock_changes` gives
 each offset transition's timestamp, day-relative elapsed second and offset
 change. A renderer must label skipped/repeated hours explicitly, using the
 timestamps/offsets and elapsed axis; it must not stretch these days onto a
-normal 24-hour axis or silently drop/duplicate an hour. The current mock frontend
-does not consume this contract yet.
+normal 24-hour axis or silently drop/duplicate an hour. The connected React
+frontend consumes this contract and labels skipped/repeated hours explicitly.
 
 Requests have a 20-second timeout per provider call. Validation and unsupported
 routes return 400; unavailable/configuration/quota failures return 503 with a
@@ -84,16 +84,17 @@ safe message. Provider bodies and authentication values are not returned.
 
 ## Remaining limitations
 
-`status` remains `prototype`. Backend log data is implemented; real-data frontend
-rendering and printable sheets still need integration. Fuel/rest events
+`status` remains `prototype`. React now renders the returned route, timeline and
+daily logs, including printable sheets. Fuel/rest events
 are not verified truck facilities. HGV routing uses provider defaults without
 specific vehicle dimensions; no claim of vehicle-specific clearance is made.
 The scheduler assumes fresh daily allowances, a full fuel range, 30-minute
 fueling, constant average leg speed, full rests, and a conservative cycle
 restart policy rather than exact rolling recap.
 
-The frontend is not connected by this backend integration. Render the returned
-attribution alongside route information when connecting the map.
+The frontend uses a same-origin `/api/` request, proxied to port 8000 by Vite in
+development. Production hosting must configure its own `/api/` proxy. Route
+attribution is displayed alongside the map. See `frontend/README.md` for setup.
 
 ## Validation
 

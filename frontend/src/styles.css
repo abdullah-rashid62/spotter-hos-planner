@@ -1226,6 +1226,12 @@ h1 {
 .log-scroll {
   overflow-x: auto;
 }
+.log-graph-wrap {
+  position: relative;
+}
+.graph-scroll-hint {
+  display: none;
+}
 .sticky-duty-labels {
   display: none;
 }
@@ -1364,6 +1370,72 @@ h1 {
   flex-shrink: 0;
   margin-top: 1px;
 }
+.empty-state {
+  min-height: 520px;
+  padding: 80px 24px;
+  text-align: center;
+  background: white;
+  border: 1px solid #dce3ec;
+  border-radius: 12px;
+}
+.empty-state svg {
+  color: #2457d6;
+}
+.empty-state p {
+  color: #526175;
+}
+.request-error {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.route-heading h2,
+.log-fields strong {
+  overflow-wrap: anywhere;
+}
+.route-heading h2 {
+  flex-wrap: wrap;
+}
+.summary-value {
+  flex-wrap: wrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.route-heading > div {
+  min-width: 0;
+}
+.route-heading > button {
+  flex-shrink: 0;
+}
+.day-navigation {
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+.summary-card {
+  min-width: 0;
+}
+.day-buttons {
+  overflow-x: auto;
+  max-width: 100%;
+}
+.day-buttons button {
+  flex-shrink: 0;
+}
+.map-label {
+  max-width: calc(100% - 80px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.map-caption {
+  max-width: calc(100% - 24px);
+  flex-wrap: wrap;
+}
+.remark-grid button:disabled {
+  opacity: 1;
+  cursor: default;
+}
 .print-sheets {
   display: none;
 }
@@ -1424,7 +1496,8 @@ h1 {
     font-size: 24px;
   }
   .via-city {
-    display: none;
+    display: block;
+    flex-basis: 100%;
   }
   .route-key-distance {
     display: none !important;
@@ -1886,8 +1959,7 @@ h1 {
   .log-note {
     font-size: 12px;
   }
-  .log-scroll:after {
-    content: "Scroll to explore the full 24-hour graph →";
+  .graph-scroll-hint {
     display: block;
     font-size: 12px;
     color: #77869a;
@@ -1896,10 +1968,11 @@ h1 {
   /* Match the graph's minimum width so labels stay aligned during scrolling. */
   .sticky-duty-labels {
     display: block;
-    position: sticky;
+    position: absolute;
     left: 0;
+    top: 0;
     width: calc(700px * 112 / 844);
-    height: 0;
+    pointer-events: none;
     z-index: 1;
   }
   .sticky-duty-labels svg {

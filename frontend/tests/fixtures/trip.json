@@ -1,0 +1,803 @@
+{
+  "status": "prototype",
+  "inputs": {
+    "current_location": "Chicago, IL",
+    "pickup_location": "Indianapolis, IN",
+    "dropoff_location": "Atlanta, GA",
+    "cycle_used_hours": "24"
+  },
+  "route": {
+    "source": "openrouteservice",
+    "profile": "driving-hgv",
+    "attribution": "Test route | OpenStreetMap contributors",
+    "locations": {
+      "current_location": {
+        "label": "Chicago, IL",
+        "coordinates": [
+          -87.6298,
+          41.8781
+        ]
+      },
+      "pickup_location": {
+        "label": "Indianapolis, IN",
+        "coordinates": [
+          -86.1581,
+          39.7684
+        ]
+      },
+      "dropoff_location": {
+        "label": "Atlanta, GA",
+        "coordinates": [
+          -84.388,
+          33.749
+        ]
+      }
+    },
+    "legs": [
+      {
+        "type": "drive_to_pickup",
+        "duration_seconds": 14400.25,
+        "distance_meters": 300000.5,
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              -87.6298,
+              41.8781
+            ],
+            [
+              -86.1581,
+              39.7684
+            ]
+          ]
+        },
+        "steps": [],
+        "warnings": []
+      },
+      {
+        "type": "drive_to_dropoff",
+        "duration_seconds": 43200.5,
+        "distance_meters": 800000.25,
+        "geometry": {
+          "type": "LineString",
+          "coordinates": [
+            [
+              -86.1581,
+              39.7684
+            ],
+            [
+              -84.388,
+              33.749
+            ]
+          ]
+        },
+        "steps": [],
+        "warnings": []
+      }
+    ],
+    "distance_meters": 1100000.75,
+    "duration_seconds": 57600.75,
+    "geometry": {
+      "type": "MultiLineString",
+      "coordinates": [
+        [
+          [
+            -87.6298,
+            41.8781
+          ],
+          [
+            -86.1581,
+            39.7684
+          ]
+        ],
+        [
+          [
+            -86.1581,
+            39.7684
+          ],
+          [
+            -84.388,
+            33.749
+          ]
+        ]
+      ]
+    }
+  },
+  "planning": {
+    "start_at": "2026-10-12T08:00:00-05:00",
+    "log_timezone": "America/Chicago",
+    "departure_policy": "tomorrow_at_08:00_in_log_timezone",
+    "timezone_source": "fixed_demo_default_not_supplied_home_terminal",
+    "assumptions": [
+      "Departure is tomorrow at 08:00 in America/Chicago, a fixed demo log timezone.",
+      "Fresh daily allowances after qualifying daily rest; initial fuel range is 1,000 miles.",
+      "Fueling takes 30 minutes on duty; pickup and drop-off each take one hour.",
+      "Speed is constant at the average for each route leg.",
+      "Full daily rests are used; split-sleeper pairings are not scheduled.",
+      "Cycle usage is retained until a 34-hour restart; rolling-cycle recap is not implemented and extra rest may result.",
+      "Before and after the trip, uncovered daily-log hours are assumed off duty, not known driver history.",
+      "Fuel and rest coordinates are estimates along the route, not verified facilities."
+    ],
+    "end_at": "2026-10-13T12:00:00.750000-05:00"
+  },
+  "events": [
+    {
+      "activity": "drive",
+      "duty_status": "driving",
+      "leg": "drive_to_pickup",
+      "reason_codes": [],
+      "start_second": 0,
+      "end_second": 14400.25,
+      "start_route_meters": 0,
+      "end_route_meters": 300000.5,
+      "driver_after": {
+        "cycle_used": 100800.25,
+        "driving_used": 14400.25,
+        "window_elapsed": 14400.25,
+        "driving_since_break": 14400.25,
+        "non_driving_streak": 0,
+        "rest_streak": 0
+      },
+      "id": "event-0001",
+      "start_at": "2026-10-12T08:00:00-05:00",
+      "end_at": "2026-10-12T12:00:00.250000-05:00",
+      "duration_seconds": 14400.25,
+      "distance_meters": 300000.5,
+      "start_coordinates": [
+        -87.6298,
+        41.8781
+      ],
+      "end_coordinates": [
+        -86.1581,
+        39.7684
+      ],
+      "location": {
+        "label": "Estimated route position toward pickup",
+        "kind": "estimated_route_position",
+        "verified_facility": false
+      },
+      "reason": "Travel along the planned route."
+    },
+    {
+      "activity": "pickup",
+      "duty_status": "on_duty",
+      "leg": "drive_to_pickup",
+      "reason_codes": [],
+      "start_second": 14400.25,
+      "end_second": 18000.25,
+      "start_route_meters": 300000.5,
+      "end_route_meters": 300000.5,
+      "driver_after": {
+        "cycle_used": 104400.25,
+        "driving_used": 14400.25,
+        "window_elapsed": 18000.25,
+        "driving_since_break": 0,
+        "non_driving_streak": 3600,
+        "rest_streak": 0
+      },
+      "id": "event-0002",
+      "start_at": "2026-10-12T12:00:00.250000-05:00",
+      "end_at": "2026-10-12T13:00:00.250000-05:00",
+      "duration_seconds": 3600.0,
+      "distance_meters": 0.0,
+      "start_coordinates": [
+        -86.1581,
+        39.7684
+      ],
+      "end_coordinates": [
+        -86.1581,
+        39.7684
+      ],
+      "location": {
+        "label": "Indianapolis, IN",
+        "kind": "routed_endpoint",
+        "verified_facility": false
+      },
+      "reason": "One hour of on-duty pickup work; this also satisfies the driving break."
+    },
+    {
+      "activity": "drive",
+      "duty_status": "driving",
+      "leg": "drive_to_dropoff",
+      "reason_codes": [],
+      "start_second": 18000.25,
+      "end_second": 43200.0,
+      "start_route_meters": 300000.5,
+      "end_route_meters": 766657.2817487644,
+      "driver_after": {
+        "cycle_used": 129600.0,
+        "driving_used": 39600.0,
+        "window_elapsed": 43200.0,
+        "driving_since_break": 25199.75,
+        "non_driving_streak": 0,
+        "rest_streak": 0
+      },
+      "id": "event-0003",
+      "start_at": "2026-10-12T13:00:00.250000-05:00",
+      "end_at": "2026-10-12T20:00:00-05:00",
+      "duration_seconds": 25199.75,
+      "distance_meters": 466656.78174876445,
+      "start_coordinates": [
+        -86.1581,
+        39.7684
+      ],
+      "end_coordinates": [
+        -85.12556386095068,
+        36.25715880718973
+      ],
+      "location": {
+        "label": "Estimated route position toward drop-off",
+        "kind": "estimated_route_position",
+        "verified_facility": false
+      },
+      "reason": "Travel along the planned route."
+    },
+    {
+      "activity": "daily_rest",
+      "duty_status": "off_duty",
+      "leg": "drive_to_dropoff",
+      "reason_codes": [
+        "daily_driving_limit"
+      ],
+      "start_second": 43200.0,
+      "end_second": 79200.0,
+      "start_route_meters": 766657.2817487644,
+      "end_route_meters": 766657.2817487644,
+      "driver_after": {
+        "cycle_used": 129600.0,
+        "driving_used": 0,
+        "window_elapsed": 0,
+        "driving_since_break": 0,
+        "non_driving_streak": 36000,
+        "rest_streak": 36000
+      },
+      "id": "event-0004",
+      "start_at": "2026-10-12T20:00:00-05:00",
+      "end_at": "2026-10-13T06:00:00-05:00",
+      "duration_seconds": 36000.0,
+      "distance_meters": 0.0,
+      "start_coordinates": [
+        -85.12556386095068,
+        36.25715880718973
+      ],
+      "end_coordinates": [
+        -85.12556386095068,
+        36.25715880718973
+      ],
+      "location": {
+        "label": "Estimated route position toward drop-off",
+        "kind": "estimated_route_position",
+        "verified_facility": false
+      },
+      "reason": "Take 10 consecutive hours off duty after reaching the 11-hour driving allowance."
+    },
+    {
+      "activity": "drive",
+      "duty_status": "driving",
+      "leg": "drive_to_dropoff",
+      "reason_codes": [],
+      "start_second": 79200.0,
+      "end_second": 97200.75,
+      "start_route_meters": 766657.2817487644,
+      "end_route_meters": 1100000.75,
+      "driver_after": {
+        "cycle_used": 147600.75,
+        "driving_used": 18000.75,
+        "window_elapsed": 18000.75,
+        "driving_since_break": 18000.75,
+        "non_driving_streak": 0,
+        "rest_streak": 0
+      },
+      "id": "event-0005",
+      "start_at": "2026-10-13T06:00:00-05:00",
+      "end_at": "2026-10-13T11:00:00.750000-05:00",
+      "duration_seconds": 18000.75,
+      "distance_meters": 333343.46825123555,
+      "start_coordinates": [
+        -85.12556386095068,
+        36.25715880718973
+      ],
+      "end_coordinates": [
+        -84.388,
+        33.749
+      ],
+      "location": {
+        "label": "Estimated route position toward drop-off",
+        "kind": "estimated_route_position",
+        "verified_facility": false
+      },
+      "reason": "Travel along the planned route."
+    },
+    {
+      "activity": "dropoff",
+      "duty_status": "on_duty",
+      "leg": "drive_to_dropoff",
+      "reason_codes": [],
+      "start_second": 97200.75,
+      "end_second": 100800.75,
+      "start_route_meters": 1100000.75,
+      "end_route_meters": 1100000.75,
+      "driver_after": {
+        "cycle_used": 151200.75,
+        "driving_used": 18000.75,
+        "window_elapsed": 21600.75,
+        "driving_since_break": 0,
+        "non_driving_streak": 3600,
+        "rest_streak": 0
+      },
+      "id": "event-0006",
+      "start_at": "2026-10-13T11:00:00.750000-05:00",
+      "end_at": "2026-10-13T12:00:00.750000-05:00",
+      "duration_seconds": 3600.0,
+      "distance_meters": 0.0,
+      "start_coordinates": [
+        -84.388,
+        33.749
+      ],
+      "end_coordinates": [
+        -84.388,
+        33.749
+      ],
+      "location": {
+        "label": "Atlanta, GA",
+        "kind": "routed_endpoint",
+        "verified_facility": false
+      },
+      "reason": "One hour of on-duty unloading work; this also satisfies the driving break."
+    }
+  ],
+  "elapsed_seconds": 100800.75,
+  "driver": {
+    "cycle_used": 151200.75,
+    "driving_used": 18000.75,
+    "window_elapsed": 21600.75,
+    "driving_since_break": 0,
+    "non_driving_streak": 3600,
+    "rest_streak": 0
+  },
+  "daily_logs": [
+    {
+      "date": "2026-10-12",
+      "timezone": "America/Chicago",
+      "kind": "planned",
+      "start_at": "2026-10-12T00:00:00-05:00",
+      "end_at": "2026-10-13T00:00:00-05:00",
+      "day_seconds": 86400.0,
+      "time_axis": "elapsed_seconds_since_local_midnight",
+      "clock_changes": [],
+      "segments": [
+        {
+          "id": "2026-10-12-before_trip",
+          "event_id": null,
+          "activity": "before_trip",
+          "duty_status": "off_duty",
+          "assumed": true,
+          "start_second": 0,
+          "end_second": 28800.0,
+          "duration_seconds": 28800.0,
+          "start_at": "2026-10-12T00:00:00-05:00",
+          "end_at": "2026-10-12T08:00:00-05:00",
+          "distance_meters": 0.0,
+          "start_coordinates": null,
+          "end_coordinates": null,
+          "location": null,
+          "reason": "Assumed off duty before trip; driver activity outside this trip is unknown."
+        },
+        {
+          "id": "2026-10-12-event-0001",
+          "event_id": "event-0001",
+          "activity": "drive",
+          "duty_status": "driving",
+          "assumed": false,
+          "start_second": 28800.0,
+          "end_second": 43200.25,
+          "duration_seconds": 14400.25,
+          "start_at": "2026-10-12T08:00:00-05:00",
+          "end_at": "2026-10-12T12:00:00.250000-05:00",
+          "distance_meters": 300000.5,
+          "start_route_meters": 0.0,
+          "end_route_meters": 300000.5,
+          "start_coordinates": [
+            -87.6298,
+            41.8781
+          ],
+          "end_coordinates": [
+            -86.1581,
+            39.7684
+          ],
+          "location": {
+            "label": "Estimated route position toward pickup",
+            "kind": "estimated_route_position",
+            "verified_facility": false
+          },
+          "reason": "Travel along the planned route.",
+          "continues_from_previous_day": false,
+          "continues_into_next_day": false
+        },
+        {
+          "id": "2026-10-12-event-0002",
+          "event_id": "event-0002",
+          "activity": "pickup",
+          "duty_status": "on_duty",
+          "assumed": false,
+          "start_second": 43200.25,
+          "end_second": 46800.25,
+          "duration_seconds": 3600.0,
+          "start_at": "2026-10-12T12:00:00.250000-05:00",
+          "end_at": "2026-10-12T13:00:00.250000-05:00",
+          "distance_meters": 0.0,
+          "start_route_meters": 300000.5,
+          "end_route_meters": 300000.5,
+          "start_coordinates": [
+            -86.1581,
+            39.7684
+          ],
+          "end_coordinates": [
+            -86.1581,
+            39.7684
+          ],
+          "location": {
+            "label": "Indianapolis, IN",
+            "kind": "routed_endpoint",
+            "verified_facility": false
+          },
+          "reason": "One hour of on-duty pickup work; this also satisfies the driving break.",
+          "continues_from_previous_day": false,
+          "continues_into_next_day": false
+        },
+        {
+          "id": "2026-10-12-event-0003",
+          "event_id": "event-0003",
+          "activity": "drive",
+          "duty_status": "driving",
+          "assumed": false,
+          "start_second": 46800.25,
+          "end_second": 72000.0,
+          "duration_seconds": 25199.75,
+          "start_at": "2026-10-12T13:00:00.250000-05:00",
+          "end_at": "2026-10-12T20:00:00-05:00",
+          "distance_meters": 466656.78174876445,
+          "start_route_meters": 300000.5,
+          "end_route_meters": 766657.2817487644,
+          "start_coordinates": [
+            -86.1581,
+            39.7684
+          ],
+          "end_coordinates": [
+            -85.12556386095068,
+            36.25715880718973
+          ],
+          "location": {
+            "label": "Estimated route position toward drop-off",
+            "kind": "estimated_route_position",
+            "verified_facility": false
+          },
+          "reason": "Travel along the planned route.",
+          "continues_from_previous_day": false,
+          "continues_into_next_day": false
+        },
+        {
+          "id": "2026-10-12-event-0004",
+          "event_id": "event-0004",
+          "activity": "daily_rest",
+          "duty_status": "off_duty",
+          "assumed": false,
+          "start_second": 72000.0,
+          "end_second": 86400.0,
+          "duration_seconds": 14400.0,
+          "start_at": "2026-10-12T20:00:00-05:00",
+          "end_at": "2026-10-13T00:00:00-05:00",
+          "distance_meters": 0.0,
+          "start_route_meters": 766657.2817487644,
+          "end_route_meters": 766657.2817487644,
+          "start_coordinates": [
+            -85.12556386095068,
+            36.25715880718973
+          ],
+          "end_coordinates": [
+            -85.12556386095068,
+            36.25715880718973
+          ],
+          "location": {
+            "label": "Estimated route position toward drop-off",
+            "kind": "estimated_route_position",
+            "verified_facility": false
+          },
+          "reason": "Take 10 consecutive hours off duty after reaching the 11-hour driving allowance.",
+          "continues_from_previous_day": false,
+          "continues_into_next_day": true
+        }
+      ],
+      "totals_seconds": {
+        "off_duty": 43200.0,
+        "sleeper": 0.0,
+        "driving": 39600.0,
+        "on_duty": 3600.0
+      },
+      "distance_meters": 766657.2817487644,
+      "miles": 476.3787491976634,
+      "remarks": [
+        {
+          "segment_id": "2026-10-12-before_trip",
+          "event_id": null,
+          "at": "2026-10-12T00:00:00-05:00",
+          "coordinates": null,
+          "location": null,
+          "text": "Assumed off duty before trip; driver activity outside this trip is unknown.",
+          "assumed": true
+        },
+        {
+          "segment_id": "2026-10-12-event-0001",
+          "event_id": "event-0001",
+          "at": "2026-10-12T08:00:00-05:00",
+          "coordinates": [
+            -87.6298,
+            41.8781
+          ],
+          "location": {
+            "label": "Estimated route position toward pickup",
+            "kind": "estimated_route_position",
+            "verified_facility": false
+          },
+          "text": "Travel along the planned route.",
+          "assumed": false
+        },
+        {
+          "segment_id": "2026-10-12-event-0002",
+          "event_id": "event-0002",
+          "at": "2026-10-12T12:00:00.250000-05:00",
+          "coordinates": [
+            -86.1581,
+            39.7684
+          ],
+          "location": {
+            "label": "Indianapolis, IN",
+            "kind": "routed_endpoint",
+            "verified_facility": false
+          },
+          "text": "One hour of on-duty pickup work; this also satisfies the driving break.",
+          "assumed": false
+        },
+        {
+          "segment_id": "2026-10-12-event-0003",
+          "event_id": "event-0003",
+          "at": "2026-10-12T13:00:00.250000-05:00",
+          "coordinates": [
+            -86.1581,
+            39.7684
+          ],
+          "location": {
+            "label": "Estimated route position toward drop-off",
+            "kind": "estimated_route_position",
+            "verified_facility": false
+          },
+          "text": "Travel along the planned route.",
+          "assumed": false
+        },
+        {
+          "segment_id": "2026-10-12-event-0004",
+          "event_id": "event-0004",
+          "at": "2026-10-12T20:00:00-05:00",
+          "coordinates": [
+            -85.12556386095068,
+            36.25715880718973
+          ],
+          "location": {
+            "label": "Estimated route position toward drop-off",
+            "kind": "estimated_route_position",
+            "verified_facility": false
+          },
+          "text": "Take 10 consecutive hours off duty after reaching the 11-hour driving allowance.",
+          "assumed": false
+        }
+      ],
+      "identity": {
+        "driver_name": null,
+        "carrier_name": null,
+        "vehicle_number": null,
+        "shipment_number": null,
+        "home_terminal": null,
+        "signature": null
+      },
+      "note": "Planned log, not a record of actual duty. Outside-trip off-duty periods are assumed. Stop coordinates are estimates; identity details are unspecified."
+    },
+    {
+      "date": "2026-10-13",
+      "timezone": "America/Chicago",
+      "kind": "planned",
+      "start_at": "2026-10-13T00:00:00-05:00",
+      "end_at": "2026-10-14T00:00:00-05:00",
+      "day_seconds": 86400.0,
+      "time_axis": "elapsed_seconds_since_local_midnight",
+      "clock_changes": [],
+      "segments": [
+        {
+          "id": "2026-10-13-event-0004",
+          "event_id": "event-0004",
+          "activity": "daily_rest",
+          "duty_status": "off_duty",
+          "assumed": false,
+          "start_second": 0.0,
+          "end_second": 21600.0,
+          "duration_seconds": 21600.0,
+          "start_at": "2026-10-13T00:00:00-05:00",
+          "end_at": "2026-10-13T06:00:00-05:00",
+          "distance_meters": 0.0,
+          "start_route_meters": 766657.2817487644,
+          "end_route_meters": 766657.2817487644,
+          "start_coordinates": [
+            -85.12556386095068,
+            36.25715880718973
+          ],
+          "end_coordinates": [
+            -85.12556386095068,
+            36.25715880718973
+          ],
+          "location": {
+            "label": "Estimated route position toward drop-off",
+            "kind": "estimated_route_position",
+            "verified_facility": false
+          },
+          "reason": "Take 10 consecutive hours off duty after reaching the 11-hour driving allowance.",
+          "continues_from_previous_day": true,
+          "continues_into_next_day": false
+        },
+        {
+          "id": "2026-10-13-event-0005",
+          "event_id": "event-0005",
+          "activity": "drive",
+          "duty_status": "driving",
+          "assumed": false,
+          "start_second": 21600.0,
+          "end_second": 39600.75,
+          "duration_seconds": 18000.75,
+          "start_at": "2026-10-13T06:00:00-05:00",
+          "end_at": "2026-10-13T11:00:00.750000-05:00",
+          "distance_meters": 333343.46825123555,
+          "start_route_meters": 766657.2817487644,
+          "end_route_meters": 1100000.75,
+          "start_coordinates": [
+            -85.12556386095068,
+            36.25715880718973
+          ],
+          "end_coordinates": [
+            -84.388,
+            33.749
+          ],
+          "location": {
+            "label": "Estimated route position toward drop-off",
+            "kind": "estimated_route_position",
+            "verified_facility": false
+          },
+          "reason": "Travel along the planned route.",
+          "continues_from_previous_day": false,
+          "continues_into_next_day": false
+        },
+        {
+          "id": "2026-10-13-event-0006",
+          "event_id": "event-0006",
+          "activity": "dropoff",
+          "duty_status": "on_duty",
+          "assumed": false,
+          "start_second": 39600.75,
+          "end_second": 43200.75,
+          "duration_seconds": 3600.0,
+          "start_at": "2026-10-13T11:00:00.750000-05:00",
+          "end_at": "2026-10-13T12:00:00.750000-05:00",
+          "distance_meters": 0.0,
+          "start_route_meters": 1100000.75,
+          "end_route_meters": 1100000.75,
+          "start_coordinates": [
+            -84.388,
+            33.749
+          ],
+          "end_coordinates": [
+            -84.388,
+            33.749
+          ],
+          "location": {
+            "label": "Atlanta, GA",
+            "kind": "routed_endpoint",
+            "verified_facility": false
+          },
+          "reason": "One hour of on-duty unloading work; this also satisfies the driving break.",
+          "continues_from_previous_day": false,
+          "continues_into_next_day": false
+        },
+        {
+          "id": "2026-10-13-after_trip",
+          "event_id": null,
+          "activity": "after_trip",
+          "duty_status": "off_duty",
+          "assumed": true,
+          "start_second": 43200.75,
+          "end_second": 86400.0,
+          "duration_seconds": 43199.25,
+          "start_at": "2026-10-13T12:00:00.750000-05:00",
+          "end_at": "2026-10-14T00:00:00-05:00",
+          "distance_meters": 0.0,
+          "start_coordinates": null,
+          "end_coordinates": null,
+          "location": null,
+          "reason": "Assumed off duty after trip; driver activity outside this trip is unknown."
+        }
+      ],
+      "totals_seconds": {
+        "off_duty": 64799.25,
+        "sleeper": 0.0,
+        "driving": 18000.75,
+        "on_duty": 3600.0
+      },
+      "distance_meters": 333343.46825123555,
+      "miles": 207.1300282917981,
+      "remarks": [
+        {
+          "segment_id": "2026-10-13-event-0004",
+          "event_id": "event-0004",
+          "at": "2026-10-13T00:00:00-05:00",
+          "coordinates": [
+            -85.12556386095068,
+            36.25715880718973
+          ],
+          "location": {
+            "label": "Estimated route position toward drop-off",
+            "kind": "estimated_route_position",
+            "verified_facility": false
+          },
+          "text": "Take 10 consecutive hours off duty after reaching the 11-hour driving allowance.",
+          "assumed": false
+        },
+        {
+          "segment_id": "2026-10-13-event-0005",
+          "event_id": "event-0005",
+          "at": "2026-10-13T06:00:00-05:00",
+          "coordinates": [
+            -85.12556386095068,
+            36.25715880718973
+          ],
+          "location": {
+            "label": "Estimated route position toward drop-off",
+            "kind": "estimated_route_position",
+            "verified_facility": false
+          },
+          "text": "Travel along the planned route.",
+          "assumed": false
+        },
+        {
+          "segment_id": "2026-10-13-event-0006",
+          "event_id": "event-0006",
+          "at": "2026-10-13T11:00:00.750000-05:00",
+          "coordinates": [
+            -84.388,
+            33.749
+          ],
+          "location": {
+            "label": "Atlanta, GA",
+            "kind": "routed_endpoint",
+            "verified_facility": false
+          },
+          "text": "One hour of on-duty unloading work; this also satisfies the driving break.",
+          "assumed": false
+        },
+        {
+          "segment_id": "2026-10-13-after_trip",
+          "event_id": null,
+          "at": "2026-10-13T12:00:00.750000-05:00",
+          "coordinates": null,
+          "location": null,
+          "text": "Assumed off duty after trip; driver activity outside this trip is unknown.",
+          "assumed": true
+        }
+      ],
+      "identity": {
+        "driver_name": null,
+        "carrier_name": null,
+        "vehicle_number": null,
+        "shipment_number": null,
+        "home_terminal": null,
+        "signature": null
+      },
+      "note": "Planned log, not a record of actual duty. Outside-trip off-duty periods are assumed. Stop coordinates are estimates; identity details are unspecified."
+    }
+  ]
+}

@@ -27,6 +27,7 @@ export default function TripForm({
   onSubmit,
   loading,
   formRef,
+  assumptions,
 }) {
   function change(event) {
     setInputs({ ...inputs, [event.target.name]: event.target.value });
@@ -115,7 +116,7 @@ export default function TripForm({
           ) : (
             <Sparkles size={17} />
           )}{" "}
-          {loading ? "Preparing preview…" : "Generate trip plan"}
+          {loading ? "Planning your trip…" : "Generate trip plan"}
           {!loading && <ArrowRight size={18} />}
         </button>
         <button
@@ -131,14 +132,29 @@ export default function TripForm({
         <summary>
           Planning assumptions <ChevronDown size={15} />
         </summary>
-        <ul>
-          <li>Property-carrying · 70-hour / 8-day cycle</li>
-          <li>Fresh daily driving allowances</li>
-          <li>1 hour each for pickup and drop-off</li>
-          <li>30-minute fueling; full initial fuel range</li>
-          <li>Full daily rests, without split sleeper</li>
-        </ul>
-        <p>This preview uses a fixed example, not a live HOS calculation.</p>
+        {!assumptions && (
+          <ul>
+            <li>Property-carrying · 70-hour / 8-day cycle</li>
+            <li>Fresh daily driving allowances</li>
+            <li>1 hour each for pickup and drop-off</li>
+            <li>30-minute fueling; full initial fuel range</li>
+            <li>Full daily rests, without split sleeper</li>
+          </ul>
+        )}
+        {assumptions ? (
+          <ul>
+            {assumptions.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        ) : (
+          <p>
+            Departure: tomorrow at 8:00 AM in America/Chicago, a fixed demo log
+            timezone. Constant average speed per leg; conservative 34-hour cycle
+            restarts without rolling recap. Outside-trip log hours are assumed
+            off duty. Stop positions are estimated.
+          </p>
+        )}
       </details>
       <div className="sidebar-note">
         <span className="note-icon">

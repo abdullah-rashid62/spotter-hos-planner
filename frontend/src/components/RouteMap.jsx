@@ -54,11 +54,17 @@ export default function RouteMap({ trip, selectedId, onSelect, visible }) {
         title: point.label,
         alt: point.label,
       }).addTo(map);
-      marker.bindTooltip(point.label, { direction: "right", offset: [16, 0] });
+      const tooltip = document.createElement("span");
+      tooltip.textContent = point.label;
+      marker.bindTooltip(tooltip, { direction: "right", offset: [16, 0] });
       marker.on("click", () => selectRef.current(point.eventId));
       markers.current.set(point.eventId, marker);
     }
-    map.fitBounds(trip.geometry, { padding: [48, 48] });
+    map.fitBounds(trip.geometry.flat(), {
+      padding: [48, 48],
+      maxZoom: 14,
+      animate: false,
+    });
     const observer = new ResizeObserver(() => map.invalidateSize());
     observer.observe(container.current);
     return () => {
@@ -105,7 +111,8 @@ export default function RouteMap({ trip, selectedId, onSelect, visible }) {
       <div className="map-canvas" ref={container} />
       <div className="map-label">
         <span className="small-dot blue" /> YOUR ROUTE{" "}
-        <span className="map-label-divider" /> Chicago to Atlanta
+        <span className="map-label-divider" /> {trip.labels.start} to{" "}
+        {trip.labels.end}
       </div>
       <div className="map-actions">
         <button
@@ -113,7 +120,11 @@ export default function RouteMap({ trip, selectedId, onSelect, visible }) {
           type="button"
           aria-label="Fit entire route"
           onClick={() =>
-            mapRef.current?.fitBounds(trip.geometry, { padding: [48, 48] })
+            mapRef.current?.fitBounds(trip.geometry.flat(), {
+              padding: [48, 48],
+              maxZoom: 14,
+              animate: false,
+            })
           }
         >
           <Navigation size={18} />
@@ -130,7 +141,7 @@ export default function RouteMap({ trip, selectedId, onSelect, visible }) {
       </div>
       {tileError && (
         <div className="map-offline" role="status">
-          Map tiles unavailable. The sample route and markers remain
+          Map tiles unavailable. The planned route and markers remain
           interactive.
         </div>
       )}
@@ -150,7 +161,8 @@ export default function RouteMap({ trip, selectedId, onSelect, visible }) {
         </div>
       )}
       <div className="map-caption">
-        <Layers size={14} /> Illustrative route · sample stop locations
+        <Layers size={14} /> {trip.route.attribution} · Estimated fuel/rest
+        positions
       </div>
     </section>
   );
