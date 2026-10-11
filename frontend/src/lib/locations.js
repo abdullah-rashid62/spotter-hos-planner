@@ -1,3 +1,4 @@
+import { apiUrl } from "../api/config";
 export function locationText(value) {
   return typeof value === "string" ? value : value?.label || "";
 }
@@ -39,7 +40,7 @@ export function parseCoordinates(text) {
 
 export async function searchLocations(query, signal) {
   const response = await fetch(
-    `/api/locations/search/?q=${encodeURIComponent(query)}`,
+    apiUrl(`/api/locations/search/?q=${encodeURIComponent(query)}`),
     { signal },
   );
   let body;

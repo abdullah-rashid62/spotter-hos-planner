@@ -39,3 +39,7 @@ Thumbs.db
 # Codex instructions — local only
 AGENTS.md
 AGENTS.override.md
+
+# Local tutoring notes and scheduling assumptions
+/SCHEDULER_NOTES.local.md
+/assumptions.md

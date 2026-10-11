@@ -5,3 +5,4 @@ sqlparse==0.6.0
 tzdata==2026.5
 python-dotenv==1.2.4
 gunicorn>=23.0.0
+django-cors-headers==4.9.0
