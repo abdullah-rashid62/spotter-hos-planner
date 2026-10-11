@@ -1,12 +1,16 @@
 {
   "rewrites": [
     {
-      "source": "/api/trips/plan/",
-      "destination": "https://spotter-hos-planner-production-c284.up.railway.app/api/trips/plan/"
+      "source": "/api/locations/search/",
+      "destination": "https://spotter-hos-planner-production-c284.up.railway.app/api/locations/search/"
     },
     {
-      "source": "/__rewrite_probe",
-      "destination": "/index.html"
+      "source": "/api/health/",
+      "destination": "https://spotter-hos-planner-production-c284.up.railway.app/api/health/"
+    },
+    {
+      "source": "/api/trips/plan/",
+      "destination": "https://spotter-hos-planner-production-c284.up.railway.app/api/trips/plan/"
     }
   ]
 }
