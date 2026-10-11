@@ -2209,12 +2209,13 @@ body:has(.location-dialog[open]) {
   isolation: isolate;
   max-width: none;
   min-height: calc(100svh - 88px);
-  padding-top: clamp(24px, 5vh, 64px);
+  padding-top: clamp(8px, 2vh, 24px);
+  padding-bottom: 24px;
 }
 .landing .page-heading {
   display: block;
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 20px;
 }
 .landing h1 {
   font-size: clamp(36px, 4vw, 52px);
@@ -2227,7 +2228,7 @@ body:has(.location-dialog[open]) {
 }
 .landing .page-heading p {
   font-size: 16px;
-  margin-top: 16px;
+  margin-top: 12px;
   color: #526175;
 }
 .route-art {
@@ -2274,7 +2275,45 @@ body:has(.location-dialog[open]) {
     0 16px 56px #1423380a,
     0 2px 8px #14233804;
   border-color: #dde4ed;
-  padding: 28px 32px 16px;
+  padding: 16px 32px 12px;
+}
+/* Let content grow on short screens, at zoom, or when feedback is visible. */
+.landing .location-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.landing .location-field > label {
+  grid-column: 1;
+  grid-row: 1;
+  margin-bottom: 0;
+}
+.landing .location-actions {
+  grid-column: 2;
+  grid-row: 1;
+  margin: 0;
+}
+.landing .location-actions button {
+  min-height: 36px;
+  padding: 8px 0 8px 8px;
+  font-size: 13px;
+}
+.landing .location-anchor,
+.landing .location-field > p {
+  grid-column: 1 / -1;
+}
+.landing .cycle-field {
+  margin-top: 12px;
+  padding-top: 12px;
+  margin-bottom: 12px;
+}
+.landing .assumptions {
+  margin-top: 4px;
+  padding-top: 4px;
+}
+.landing .assumptions summary {
+  min-height: 44px;
 }
 .panel-title {
   margin-bottom: 24px;
@@ -2497,7 +2536,7 @@ body:has(.location-dialog[open]) {
     padding-top: 24px;
   }
   .landing .page-heading {
-    margin-bottom: 28px;
+    margin-bottom: 20px;
   }
   .landing h1 {
     max-width: none;
@@ -2510,7 +2549,7 @@ body:has(.location-dialog[open]) {
   }
   .landing .planner-panel {
     display: block;
-    padding: 24px 20px 12px;
+    padding: 16px 20px 12px;
   }
   .route-art {
     opacity: 0.35;
@@ -2554,17 +2593,55 @@ body:has(.location-dialog[open]) {
   }
 }
 @media (min-width: 761px) and (max-height: 850px) {
+  body:has(.landing) .topbar {
+    height: 56px;
+  }
   .landing {
-    padding-top: 8px;
+    min-height: calc(100svh - 56px);
+    padding-top: 0;
+    padding-bottom: 12px;
   }
   .landing .page-heading {
-    margin-bottom: 20px;
+    margin-bottom: 12px;
   }
   .landing h1 {
-    font-size: 40px;
+    font-size: 36px;
+  }
+  .landing .page-heading p {
+    margin-top: 8px;
+  }
+  .landing .location-field {
+    margin-bottom: 8px;
+  }
+  .landing .location-actions button {
+    min-height: 32px;
+    padding-block: 6px;
+  }
+  .landing .input-wrap {
+    height: 48px;
+  }
+  .landing .form-secondary {
+    min-height: 44px;
+  }
+  .landing .example-button {
+    margin-top: 0;
   }
   .landing .planner-panel {
-    padding-top: 20px;
+    padding-top: 12px;
+  }
+}
+@media (pointer: coarse) {
+  .landing .location-actions button {
+    min-height: 44px;
+  }
+}
+@media (max-width: 360px) {
+  .landing .location-field {
+    grid-template-columns: 1fr;
+  }
+  .landing .location-actions {
+    grid-column: 1;
+    grid-row: auto;
   }
 }
 @media (prefers-reduced-motion: reduce) {
