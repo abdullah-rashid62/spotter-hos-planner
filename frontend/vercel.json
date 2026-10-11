@@ -1,8 +1,12 @@
 {
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "https://spotter-hos-planner-production-c284.up.railway.app/api/:path*"
+      "source": "/api/trips/plan/",
+      "destination": "https://spotter-hos-planner-production-c284.up.railway.app/api/trips/plan/"
+    },
+    {
+      "source": "/__rewrite_probe",
+      "destination": "/index.html"
     }
   ]
 }
