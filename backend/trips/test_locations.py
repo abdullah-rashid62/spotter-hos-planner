@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from django.core.cache import cache
-from django.test import SimpleTestCase
+from django.test import TestCase
 from rest_framework.test import APIClient
 
 from trips.serializers import TripInputSerializer
@@ -11,7 +11,7 @@ from trips.services.routing import RoutingUnavailable, search_locations
 LOCATION = {'label': '100 Main Street', 'latitude': 41.8, 'longitude': -87.6}
 
 
-class LocationTests(SimpleTestCase):
+class LocationTests(TestCase):
     def setUp(self):
         cache.clear()
 
@@ -27,7 +27,7 @@ class LocationTests(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data['results'][0], {**LOCATION, 'precision': 'address'})
         self.assertEqual(response.data['results'][1]['precision'], 'street')
-        provider.assert_called_once_with('/geocode/search', parameters={'text': '100 Main Street', 'size': 5})
+        provider.assert_called_once_with('/geocode/autocomplete', parameters={'text': '100 main street', 'size': 5})
 
     @patch('trips.views.search_locations')
     def test_search_validates_input_and_throttles(self, search):
@@ -37,10 +37,10 @@ class LocationTests(SimpleTestCase):
         search.assert_not_called()
         cache.clear()
         search.return_value = []
-        for _ in range(20):
+        for _ in range(120):
             self.assertEqual(client.get('/api/locations/search/', {'q': 'Main Street'}).status_code, 200)
         self.assertEqual(client.get('/api/locations/search/', {'q': 'Main Street'}).status_code, 429)
-        self.assertEqual(search.call_count, 20)
+        self.assertEqual(search.call_count, 120)
 
     @patch('trips.services.routing.request_ors')
     def test_bad_provider_coordinates_and_labels_are_rejected(self, provider):

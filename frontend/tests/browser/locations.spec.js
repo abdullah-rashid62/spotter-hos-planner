@@ -10,7 +10,7 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
-test("address search requires selection and confirmation, then sends exact coordinates", async ({
+test("automatic suggestions require selection and confirmation, then send exact coordinates", async ({
   page,
 }) => {
   let searches = 0;
@@ -46,16 +46,17 @@ test("address search requires selection and confirmation, then sends exact coord
     .getByLabel("Current location", { exact: true })
     .fill("100 Main Street");
   expect(searches).toBe(0);
-  await page.getByRole("button", { name: "Plan route", exact: true }).click();
-  await expect(page.locator("#current_location-error")).toContainText(
-    "Find your address",
-  );
   expect(submitted).toBeUndefined();
-  await page.getByLabel("Current location", { exact: true }).press("Enter");
+  await expect(page.getByRole("button", { name: "Find address" })).toHaveCount(
+    0,
+  );
   await expect(
     page.getByRole("button", { name: /Main Street, Springfield/ }),
   ).toContainText("Approximate match");
-  await page.getByRole("button", { name: /100 Main Street, Chicago/ }).focus();
+  await page.getByLabel("Current location", { exact: true }).press("ArrowDown");
+  await expect(
+    page.getByRole("button", { name: /100 Main Street, Chicago/ }),
+  ).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("dialog")).toBeVisible();
   await expect(page.getByRole("dialog")).toContainText("41.878100, -87.629800");
@@ -112,11 +113,6 @@ test("no match and service failure preserve input; map fallback works with keybo
   await page.goto("/");
   const input = page.getByLabel("Pickup location", { exact: true });
   await input.fill("Unlisted warehouse");
-  await page.getByRole("button", { name: "Plan route", exact: true }).click();
-  await expect(page.locator("#pickup_location-error")).toContainText(
-    "Find your address",
-  );
-  await input.press("Enter");
   await expect(
     page.getByText("Address not found.", { exact: false }),
   ).toBeVisible();
@@ -174,6 +170,17 @@ test("no match and service failure preserve input; map fallback works with keybo
 test("editing during a search ignores its stale response", async ({ page }) => {
   let release;
   await page.route("**/api/locations/search/**", async (route) => {
+    if (
+      new URL(route.request().url()).searchParams.get("q") === "New address"
+    ) {
+      return route.fulfill({
+        json: {
+          results: [
+            { label: "New address match", latitude: 41, longitude: -81 },
+          ],
+        },
+      });
+    }
     await new Promise((resolve) => {
       release = resolve;
     });
@@ -186,13 +193,49 @@ test("editing during a search ignores its stale response", async ({ page }) => {
   await page.goto("/");
   const input = page.getByLabel("Current location", { exact: true });
   await input.fill("Old address");
-  await input.press("Enter");
   await expect.poll(() => Boolean(release)).toBe(true);
   await input.fill("New address");
   release();
   await expect(
-    page.getByRole("button", { name: "Find address" }).first(),
-  ).toBeEnabled();
-  await expect(page.locator(".location-results")).toHaveCount(0);
+    page.getByRole("button", { name: /New address match/ }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: /Old address/ })).toHaveCount(
+    0,
+  );
   await expect(input).toHaveValue("New address");
+});
+
+test("autocomplete debounces typing, skips short queries, and dismisses with Escape", async ({
+  page,
+}) => {
+  const queries = [];
+  await page.route("**/api/locations/search/**", (route) => {
+    queries.push(new URL(route.request().url()).searchParams.get("q"));
+    return route.fulfill({
+      json: {
+        results: [
+          { label: "Chicago, Illinois", latitude: 41.8, longitude: -87.6 },
+        ],
+      },
+    });
+  });
+  await page.goto("/");
+  await page.clock.install();
+  const input = page.getByLabel("Current location", { exact: true });
+  await input.fill("Ch");
+  await page.clock.fastForward(600);
+  expect(queries).toEqual([]);
+  await input.fill("Chi");
+  await page.clock.fastForward(300);
+  await input.fill("Chicago");
+  await page.clock.fastForward(499);
+  expect(queries).toEqual([]);
+  await page.clock.fastForward(1);
+  await expect(
+    page.getByRole("button", { name: /Chicago, Illinois/ }),
+  ).toBeVisible();
+  expect(queries).toEqual(["Chicago"]);
+  await input.press("Escape");
+  await expect(page.locator(".location-results")).toHaveCount(0);
+  await expect(input).toHaveValue("Chicago");
 });

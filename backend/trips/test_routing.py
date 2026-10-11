@@ -4,11 +4,13 @@ from io import BytesIO
 from unittest.mock import patch
 from urllib.error import HTTPError, URLError
 
-from django.test import SimpleTestCase, override_settings
+from django.core.cache import cache
+from django.core.cache.backends.db import DatabaseCache
+from django.test import TestCase, override_settings
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
 
-from trips.services.routing import RoutingUnavailable, search_locations, request_ors, route_leg
+from trips.services.routing import RoutingUnavailable, search_locations, request_ors, route_leg, provider_cache_key
 from trips.services.trip_planner import plan_trip
 
 
@@ -20,7 +22,10 @@ def route_response(distance=120000.25, duration=7200.5):
 
 
 @override_settings(ORS_API_KEY='test-key', ORS_TIMEOUT_SECONDS=20)
-class RoutingTests(SimpleTestCase):
+class RoutingTests(TestCase):
+    def setUp(self):
+        cache.clear()
+
     @patch('trips.services.routing.urlopen')
     def test_transport_uses_auth_header_and_lon_lat(self, urlopen):
         urlopen.return_value.__enter__.return_value = BytesIO(json.dumps(route_response()).encode())
@@ -104,3 +109,74 @@ class RoutingTests(SimpleTestCase):
             'cycle_used_hours': 24,
         }, format='json')
         self.assertEqual(response.status_code, 503)
+
+    @patch('trips.services.routing.request_ors')
+    def test_autocomplete_cache_normalizes_query_and_is_shared(self, request):
+        request.return_value = {'features': []}
+        self.assertEqual(search_locations('  Main   STREET '), [])
+        self.assertEqual(search_locations('main street'), [])
+        request.assert_called_once()
+        # A separate backend instance reads the same database, like another worker.
+        other_worker = DatabaseCache('shared_cache', {})
+        key = provider_cache_key('/geocode/autocomplete', {'text': 'main street', 'size': 5})
+        self.assertEqual(other_worker.get(key), [])
+        other_worker.delete(key)
+        search_locations('main street')
+        self.assertEqual(request.call_count, 2)
+
+    @patch('trips.services.routing.request_ors', return_value=route_response())
+    def test_cycle_change_reuses_route_but_recalculates_schedule(self, request):
+        location = {'label': 'Chicago', 'latitude': 41.8, 'longitude': -87.6}
+        pickup = {'label': 'Indianapolis', 'latitude': 39.7, 'longitude': -86.1}
+        inputs = {'current_location': location, 'pickup_location': pickup,
+                  'dropoff_location': location, 'cycle_used_hours': 0}
+        first = plan_trip(inputs)
+        second = plan_trip({**inputs, 'cycle_used_hours': 69})
+        self.assertEqual(request.call_count, 2)
+        self.assertEqual(first['route'], second['route'])
+        self.assertGreater(second['elapsed_seconds'], first['elapsed_seconds'])
+        self.assertNotEqual(first['events'], second['events'])
+        # Changing just the dropoff reuses the current-to-pickup leg.
+        plan_trip({**inputs, 'dropoff_location': {**location, 'longitude': -88}})
+        self.assertEqual(request.call_count, 3)
+
+    @patch('trips.services.routing.request_ors', return_value=route_response())
+    def test_route_cache_preserves_direction_type_and_isolation(self, request):
+        first = route_leg([1, 2], [3, 4], 'drive_to_pickup')
+        first['geometry']['coordinates'][0][0] = 0
+        second = route_leg([1, 2], [3, 4], 'drive_to_dropoff')
+        self.assertEqual(request.call_count, 1)
+        self.assertEqual(second['type'], 'drive_to_dropoff')
+        self.assertEqual(second['geometry']['coordinates'][0][0], -87.6)
+        route_leg([3, 4], [1, 2], 'drive_to_pickup')
+        self.assertEqual(request.call_count, 2)
+        self.assertNotEqual(provider_cache_key('/directions/hgv', {'units': 'm'}),
+                            provider_cache_key('/directions/hgv', {'units': 'km'}))
+        self.assertNotEqual(provider_cache_key('/directions/hgv', {}),
+                            provider_cache_key('/directions/car', {}))
+
+    @override_settings(LOCATION_CACHE_SECONDS=0, ROUTE_CACHE_SECONDS=0)
+    @patch('trips.services.routing.request_ors')
+    def test_expired_results_are_requested_again(self, request):
+        request.return_value = {'features': []}
+        search_locations('Main Street')
+        search_locations('Main Street')
+        self.assertEqual(request.call_count, 2)
+        request.return_value = route_response()
+        route_leg([1, 2], [3, 4], 'drive_to_pickup')
+        route_leg([1, 2], [3, 4], 'drive_to_pickup')
+        self.assertEqual(request.call_count, 4)
+
+    @patch('trips.services.routing.request_ors')
+    def test_provider_failures_are_not_cached(self, request):
+        request.side_effect = RoutingUnavailable()
+        with self.assertRaises(RoutingUnavailable):
+            search_locations('Main Street')
+        with self.assertRaises(RoutingUnavailable):
+            route_leg([1, 2], [3, 4], 'drive_to_pickup')
+        request.side_effect = None
+        request.return_value = {'features': []}
+        self.assertEqual(search_locations('Main Street'), [])
+        request.return_value = route_response()
+        self.assertGreater(route_leg([1, 2], [3, 4], 'drive_to_pickup')['duration_seconds'], 0)
+        self.assertEqual(request.call_count, 4)

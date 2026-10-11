@@ -10,6 +10,7 @@ Start Django in one terminal (set `ORS_API_KEY` in ignored `backend/.env`):
 
 ```powershell
 cd backend
+.\.venv\Scripts\python.exe manage.py migrate
 .\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
 ```
 
@@ -48,8 +49,12 @@ Node 22.12+ is supported. Production hosting/configuration is separate work.
   OpenStreetMap tiles. Provider attribution is displayed too. Tile failures
   retain route overlays, selection and fit controls with a visible explanation.
 - Each location accepts a full address or decimal `latitude, longitude`.
-  Find address/Enter requests up to five candidates from `/api/locations/search/`;
-  typing does not make requests. Users select a candidate and confirm its map
+  Typing at least three characters requests up to five candidates after a 500ms
+  pause from `/api/locations/search/`; Enter searches immediately or retries.
+  Repeated queries reuse Django's shared cache. Arrow Down focuses suggestions;
+  arrow keys navigate and Escape dismisses them. Coordinates open the map only
+  on Enter, so typing never opens a dialog unexpectedly.
+  Users select a candidate and confirm its map
   point. Broad matches are labeled approximate, not treated as exact addresses.
 - Coordinates bypass search. A map picker supports click/touch and keyboard
   panning, entrance adjustments, confirmation, cancellation, and focus return.

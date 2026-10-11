@@ -1,15 +1,23 @@
 """ORS transport and response normalization; the scheduler stays provider-independent."""
 import json
 import logging
+from hashlib import sha256
 from math import isfinite
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from django.conf import settings
+from django.core.cache import cache
 from rest_framework.exceptions import APIException, ValidationError
 
 logger = logging.getLogger(__name__)
+
+
+def provider_cache_key(path, parameters):
+    # Include all provider options and coordinate order, never user duty hours.
+    payload = json.dumps([path, parameters], sort_keys=True, separators=(',', ':'))
+    return 'ors:v1:' + sha256(payload.encode('utf-8')).hexdigest()
 
 
 class RoutingUnavailable(APIException):
@@ -62,7 +70,14 @@ def validate_coordinates(coordinates):
 
 def search_locations(text):
     """Return candidates for explicit selection; never choose a match for the user."""
-    result = request_ors('/geocode/search', parameters={'text': text, 'size': 5})
+    text = ' '.join(text.split()).casefold()
+    path = '/geocode/autocomplete'
+    parameters = {'text': text, 'size': 5}
+    key = provider_cache_key(path, parameters)
+    cached = cache.get(key)
+    if cached is not None:
+        return cached
+    result = request_ors(path, parameters=parameters)
     try:
         matches = []
         for feature in result['features']:
@@ -76,9 +91,11 @@ def search_locations(text):
                 'label': label, 'longitude': coordinates[0], 'latitude': coordinates[1],
                 'precision': properties.get('layer', 'unknown'),
             })
-        return matches
     except (KeyError, IndexError, TypeError, ValueError):
         raise RoutingUnavailable('The location service returned an invalid response.') from None
+    # Empty matches are valid; provider failures and malformed data are not cached.
+    cache.set(key, matches, timeout=settings.LOCATION_CACHE_SECONDS)
+    return matches
 
 
 def route_leg(start, end, leg_type):
@@ -87,9 +104,15 @@ def route_leg(start, end, leg_type):
         return {'type': leg_type, 'duration_seconds': 0, 'distance_meters': 0,
                 'geometry': {'type': 'LineString', 'coordinates': [start, end]},
                 'steps': [], 'warnings': []}
-    result = request_ors('/v2/directions/driving-hgv/geojson', body={
+    path = '/v2/directions/driving-hgv/geojson'
+    body = {
         'coordinates': [start, end], 'instructions': True, 'units': 'm',
-    })
+    }
+    key = provider_cache_key(path, body)
+    cached = cache.get(key)
+    if cached is not None:
+        return {**cached, 'type': leg_type}
+    result = request_ors(path, body=body)
     try:
         feature = result['features'][0]
         properties = feature['properties']
@@ -107,11 +130,13 @@ def route_leg(start, end, leg_type):
         segments = properties['segments']
         if len(segments) != 1:
             raise ValueError('Expected one segment')
-        return {'type': leg_type, 'duration_seconds': duration, 'distance_meters': distance,
+        leg = {'duration_seconds': duration, 'distance_meters': distance,
                 'geometry': geometry, 'steps': segments[0]['steps'],
                 'warnings': properties.get('warnings', [])}
     except (KeyError, IndexError, TypeError, ValueError):
         raise RoutingUnavailable('The routing service returned an invalid route.') from None
+    cache.set(key, leg, timeout=settings.ROUTE_CACHE_SECONDS)
+    return {**leg, 'type': leg_type}
 
 
 def get_trip_route(inputs):

@@ -1,7 +1,8 @@
 # Backend
 
 Install `requirements.txt` in a Python virtual environment. Copy `.env.example`
-to `.env`, set `ORS_API_KEY`, then run `python manage.py runserver` from this
+to `.env`, set `ORS_API_KEY`, then run `python manage.py migrate` followed by
+`python manage.py runserver` from this
 directory. `.env` is ignored by Git. Deployment environment variables override
 the local file.
 
@@ -25,7 +26,8 @@ them to provider longitude/latitude order and requests each leg with the
 `driving-hgv` profile. Generation makes no geocoding calls. The example above
 uses illustrative city points, not verified pickup or delivery facilities.
 
-`GET /api/locations/search/?q=100%20Main%20Street` searches addresses on demand.
+`GET /api/locations/search/?q=100%20Main%20Street` provides address suggestions
+using ORS's `/geocode/autocomplete` endpoint.
 The query must contain 3–255 characters. It returns up to five `results` with
 `label`, `latitude`, `longitude`, and provider `precision` (address, venue,
 street, locality, etc.). Empty results mean no match; no city-center fallback
@@ -34,12 +36,36 @@ decimal latitude/longitude directly. Coordinates and map points require no
 geocoding or reverse-geocoding requests. A readable label is not proof of a
 verified facility, precise entrance, or accessible truck route.
 
-Address search is throttled to 20 requests/minute per authenticated user or
-anonymous IP using DRF's cache-based throttle. The default cache is per-process;
-production workers need a shared cache and correctly configured proxy IP handling.
-This is basic abuse protection, not a global provider quota guarantee. Search
-results are not persistently cached. There is no live autocomplete or country
-restriction. Provider availability and account quotas still apply.
+Address search is throttled to 120 requests/minute per authenticated user or
+anonymous IP using DRF's shared cache-based throttle. Configure proxy IP handling
+for deployment. This is basic abuse protection, not a global provider quota
+guarantee. Geographic scope remains unrestricted.
+
+## Shared provider cache
+
+Django's DatabaseCache uses the `shared_cache` table created by `migrate`.
+Results persist across restarts and are shared by all workers/users connected
+to the same database. The local SQLite file supports workers on one host;
+multi-host deployments must use a shared database rather than separate SQLite files.
+No extra cache service is required. The table holds up to approximately 10,000
+entries before Django culls older entries.
+
+Suggestions normalize case and whitespace and cache valid results (including no
+matches). Routes cache each directed leg by provider endpoint/profile, exact
+coordinates, and all request options. Changing a location only refetches affected
+legs. Labels, cycle hours, and departure time do not affect the route key; the
+scheduler, timeline and daily logs run anew for every trip request. Provider
+errors and malformed results are never cached. Simultaneous cold misses can
+still make duplicate provider requests; this is not a global quota limiter.
+
+Both caches expire after 24 hours by default. Set `LOCATION_CACHE_SECONDS` and
+`ROUTE_CACHE_SECONDS` in the environment to change this (0 disables retention).
+An expired entry is refreshed on demand; there is no stale-on-error fallback.
+To clear cached provider results and throttle counters during maintenance:
+`python manage.py shell -c "from django.core.cache import cache; cache.clear()"`.
+
+References: [Django database caching](https://docs.djangoproject.com/en/6.0/topics/cache/#database-caching)
+and [ORS geocoder](https://giscience.github.io/openrouteservice/api-reference/endpoints/geocoder/).
 
 The response includes:
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Search } from "lucide-react";
+import { MapPin } from "lucide-react";
 import {
   locationText,
   parseCoordinates,
@@ -14,6 +14,8 @@ export default function LocationField({ field, value, onChange, error }) {
   const [busy, setBusy] = useState(false);
   const [picker, setPicker] = useState(null);
   const request = useRef(null);
+  const debounce = useRef(null);
+  const suggestions = useRef(null);
   const input = useRef(null);
   const selected = validLocation(value);
   const text = locationText(value);
@@ -28,7 +30,14 @@ export default function LocationField({ field, value, onChange, error }) {
     setResults(null);
     setMessage("");
     setPicker(null);
-    return () => request.current?.abort();
+    if (!selected && text.trim().length >= 3) {
+      debounce.current = setTimeout(() => search(true), 500);
+    }
+    return () => {
+      clearTimeout(debounce.current);
+      request.current?.abort();
+      request.current = null;
+    };
   }, [value]);
 
   function closePicker() {
@@ -37,14 +46,17 @@ export default function LocationField({ field, value, onChange, error }) {
     requestAnimationFrame(() => input.current?.focus());
   }
 
-  async function search() {
+  async function search(automatic = false) {
+    clearTimeout(debounce.current);
     if (request.current) return;
     setMessage("");
     setResults(null);
     try {
       const coordinates = parseCoordinates(text);
       if (coordinates) {
-        setPicker({ initial: coordinates });
+        if (automatic)
+          setMessage("Press Enter to verify these coordinates on the map.");
+        else setPicker({ initial: coordinates });
         return;
       }
       if (text.trim().length < 3) {
@@ -104,26 +116,28 @@ export default function LocationField({ field, value, onChange, error }) {
               event.preventDefault();
               if (!selected) search();
             }
+            if (event.key === "ArrowDown" && results?.length) {
+              event.preventDefault();
+              suggestions.current?.querySelector("button")?.focus();
+            }
+            if (event.key === "Escape") {
+              clearTimeout(debounce.current);
+              request.current?.abort();
+              request.current = null;
+              setBusy(false);
+              setResults(null);
+              setMessage("");
+            }
           }}
           placeholder="Enter full address"
           autoComplete="off"
           maxLength={255}
           aria-invalid={feedbackIsError}
           aria-describedby={`${field.name}-error`}
+          aria-controls={results?.length ? `${field.name}-matches` : undefined}
         />
       </div>
       <div className="location-actions">
-        {!selected && (
-          <button
-            className="button secondary"
-            type="button"
-            disabled={busy || !text.trim()}
-            onClick={search}
-          >
-            <Search size={14} />
-            {busy ? "Finding…" : "Find address"}
-          </button>
-        )}
         <button
           className="location-map-button"
           type="button"
@@ -146,7 +160,27 @@ export default function LocationField({ field, value, onChange, error }) {
         {feedback}
       </p>
       {results?.length > 0 && (
-        <ul className="location-results" aria-label={`${field.label} matches`}>
+        <ul
+          ref={suggestions}
+          id={`${field.name}-matches`}
+          className="location-results"
+          aria-label={`${field.label} matches`}
+          onKeyDown={(event) => {
+            const buttons = [...suggestions.current.querySelectorAll("button")];
+            const index = buttons.indexOf(document.activeElement);
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+              event.preventDefault();
+              const next = index + (event.key === "ArrowDown" ? 1 : -1);
+              if (next < 0) input.current?.focus();
+              else buttons[Math.min(next, buttons.length - 1)]?.focus();
+            }
+            if (event.key === "Escape") {
+              setResults(null);
+              setMessage("");
+              input.current?.focus();
+            }
+          }}
+        >
           {results.map((result, index) => (
             <li key={index}>
               <button

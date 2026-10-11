@@ -36,7 +36,7 @@ class TripPlanView(APIView):
 
 class LocationSearchThrottle(UserRateThrottle):
     scope = 'location_search'
-    rate = '20/min'
+    rate = '120/min'
 
 
 class LocationSearchView(APIView):

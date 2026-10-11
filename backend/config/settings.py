@@ -20,6 +20,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')  # Existing deployment environment values take priority.
 ORS_API_KEY = os.environ.get('ORS_API_KEY', '')
 ORS_TIMEOUT_SECONDS = 20
+LOCATION_CACHE_SECONDS = int(os.environ.get('LOCATION_CACHE_SECONDS', 86400))
+ROUTE_CACHE_SECONDS = int(os.environ.get('ROUTE_CACHE_SECONDS', 86400))
+
+# Database-backed entries are shared by users and workers using this database.
+# The table is created by the trips migration, including in test databases.
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'shared_cache',
+        'OPTIONS': {'MAX_ENTRIES': 10000},
+    },
+}
 
 
 # Quick-start development settings - unsuitable for production
