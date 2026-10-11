@@ -48,7 +48,7 @@ test("address search requires selection and confirmation, then sends exact coord
   expect(searches).toBe(0);
   await page.getByRole("button", { name: "Plan route", exact: true }).click();
   await expect(page.locator("#current_location-error")).toContainText(
-    "Search and select",
+    "Find your address",
   );
   expect(submitted).toBeUndefined();
   await page.getByLabel("Current location", { exact: true }).press("Enter");
@@ -73,7 +73,7 @@ test("address search requires selection and confirmation, then sends exact coord
   ).toHaveCount(0);
   await page.getByRole("button", { name: "Update route", exact: true }).click();
   await expect(page.locator("#current_location-error")).toContainText(
-    "Search and select",
+    "Find your address",
   );
 });
 
@@ -112,11 +112,21 @@ test("no match and service failure preserve input; map fallback works with keybo
   await page.goto("/");
   const input = page.getByLabel("Pickup location", { exact: true });
   await input.fill("Unlisted warehouse");
+  await page.getByRole("button", { name: "Plan route", exact: true }).click();
+  await expect(page.locator("#pickup_location-error")).toContainText(
+    "Find your address",
+  );
   await input.press("Enter");
   await expect(
-    page.getByText("No matching address.", { exact: false }),
+    page.getByText("Address not found.", { exact: false }),
   ).toBeVisible();
   await expect(input).toHaveValue("Unlisted warehouse");
+  await expect(page.locator("#pickup_location-error")).toHaveText(
+    "Address not found. Try a more complete address or choose on the map.",
+  );
+  await expect(
+    page.locator(".location-field").nth(1).getByRole("status"),
+  ).toHaveCount(1);
   await page.unroute("**/api/locations/search/**");
   await page.route("**/api/locations/search/**", (route) =>
     route.fulfill({
@@ -181,7 +191,7 @@ test("editing during a search ignores its stale response", async ({ page }) => {
   await input.fill("New address");
   release();
   await expect(
-    page.getByRole("button", { name: "Search / locate" }).first(),
+    page.getByRole("button", { name: "Find address" }).first(),
   ).toBeEnabled();
   await expect(page.locator(".location-results")).toHaveCount(0);
   await expect(input).toHaveValue("New address");

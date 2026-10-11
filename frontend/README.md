@@ -48,13 +48,15 @@ Node 22.12+ is supported. Production hosting/configuration is separate work.
   OpenStreetMap tiles. Provider attribution is displayed too. Tile failures
   retain route overlays, selection and fit controls with a visible explanation.
 - Each location accepts a full address or decimal `latitude, longitude`.
-  Search/Enter requests up to five candidates from `/api/locations/search/`;
+  Find address/Enter requests up to five candidates from `/api/locations/search/`;
   typing does not make requests. Users select a candidate and confirm its map
   point. Broad matches are labeled approximate, not treated as exact addresses.
 - Coordinates bypass search. A map picker supports click/touch and keyboard
   panning, entrance adjustments, confirmation, cancellation, and focus return.
   Failed searches preserve input and offer map/coordinate fallback. Editing a
   selected label clears its coordinates; late search responses are ignored.
+  The form presents address entry and Choose on map, without repeated coordinate
+  instructions. Each field shows one relevant validation/search message at a time.
 - Generation sends selected labels/coordinates; it does not geocode them again.
   The example uses labeled city points, not verified facilities. Fuel/rest stops
   remain estimates. The provider may snap selected locations to nearby roads.

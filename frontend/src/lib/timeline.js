@@ -95,8 +95,7 @@ export function validateInputs(inputs) {
     "dropoff_location",
   ]) {
     if (!validLocation(inputs[name]))
-      errors[name] =
-        "Search and select a location, or choose a point on the map.";
+      errors[name] = "Find your address or choose on the map.";
   }
   const cycle = Number(inputs.cycle_used_hours);
   if (

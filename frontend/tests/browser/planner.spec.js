@@ -229,7 +229,7 @@ test("one pending submission; edits stay stale and retry preserves inputs", asyn
   await page
     .locator(".location-field")
     .first()
-    .getByRole("button", { name: "Search / locate" })
+    .getByRole("button", { name: "Find address" })
     .click();
   await page.getByRole("button", { name: /Dallas, TX Approximate/ }).click();
   await page.getByRole("button", { name: "Use this location" }).click();

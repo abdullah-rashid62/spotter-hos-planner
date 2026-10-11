@@ -17,6 +17,10 @@ export default function LocationField({ field, value, onChange, error }) {
   const input = useRef(null);
   const selected = validLocation(value);
   const text = locationText(value);
+  const feedback = busy ? "Finding addresses…" : message || error;
+  const feedbackIsError = Boolean(
+    !busy && (message ? !results?.length : error),
+  );
   useEffect(() => {
     request.current?.abort();
     request.current = null;
@@ -62,7 +66,7 @@ export default function LocationField({ field, value, onChange, error }) {
       setMessage(
         matches.length
           ? "Select a match, then verify its map pin."
-          : "No matching address. Add a ZIP code, city or state, enter coordinates, or choose on the map.",
+          : "Address not found. Try a more complete address or choose on the map.",
       );
     } catch (error) {
       if (request.current !== controller) return;
@@ -101,16 +105,13 @@ export default function LocationField({ field, value, onChange, error }) {
               if (!selected) search();
             }
           }}
-          placeholder="Full address or latitude, longitude"
+          placeholder="Enter full address"
           autoComplete="off"
           maxLength={255}
-          aria-invalid={Boolean(error)}
-          aria-describedby={`${field.name}-hint ${field.name}-error`}
+          aria-invalid={feedbackIsError}
+          aria-describedby={`${field.name}-error`}
         />
       </div>
-      <p className="field-hint" id={`${field.name}-hint`}>
-        Street number, city, state and ZIP, or decimal coordinates.
-      </p>
       <div className="location-actions">
         {!selected && (
           <button
@@ -120,7 +121,7 @@ export default function LocationField({ field, value, onChange, error }) {
             onClick={search}
           >
             <Search size={14} />
-            {busy ? "Searching…" : "Search / locate"}
+            {busy ? "Finding…" : "Find address"}
           </button>
         )}
         <button
@@ -137,11 +138,12 @@ export default function LocationField({ field, value, onChange, error }) {
           Selected: {value.latitude.toFixed(6)}, {value.longitude.toFixed(6)}
         </p>
       )}
-      <p id={`${field.name}-error`} className="field-error">
-        {error}
-      </p>
-      <p className="location-search-status" role="status">
-        {busy ? "Searching addresses…" : message}
+      <p
+        id={`${field.name}-error`}
+        className={feedbackIsError ? "field-error" : "location-search-status"}
+        role="status"
+      >
+        {feedback}
       </p>
       {results?.length > 0 && (
         <ul className="location-results" aria-label={`${field.label} matches`}>
