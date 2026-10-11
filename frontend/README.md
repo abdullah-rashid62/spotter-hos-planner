@@ -1,114 +1,43 @@
-# Routter frontend
+# Frontend
 
-React trip planner connected to Django's `POST /api/trips/plan/`. The backend
-owns routing, scheduling, timestamps and daily-log splitting. The frontend
-adapts the response for display; it does not recalculate the duty schedule.
+The React 19 and Vite 7 client turns the Django planning response into a route map, stop itinerary, and printable multi-day log sheets. It uses Leaflet with OpenStreetMap tiles, Lucide icons, and Inter. The backend owns routing, HOS scheduling, timestamps, and daily log calculations; the browser adapts units and renders the response.
 
 ## Run locally
 
-Start Django in one terminal (set `ORS_API_KEY` in ignored `backend/.env`):
+Start the [backend](../backend/README.md) on `127.0.0.1:8000`, including its `ORS_API_KEY`. Then, from `frontend/`:
 
 ```powershell
-cd backend
-.\.venv\Scripts\python.exe manage.py migrate
-.\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
-```
-
-Start React in another terminal:
-
-```powershell
-cd frontend
 npm install
 npm run dev
 ```
 
-Open http://127.0.0.1:5173. Vite proxies `/api` requests to Django on port 8000.
-The example action fills the four inputs; Plan route requests a real
-route. No trip is generated automatically on page load.
+Open `http://127.0.0.1:5173`. `vite.config.js` proxies `/api` to Django on port 8000. The frontend has no required environment variables; never put the ORS key in a `VITE_` variable. Node 22.12+ is suitable for this Vite version.
 
-`npm run build` creates `dist/`. Production hosting must serve the frontend and
-proxy `/api/` to Django on the same origin; Vite's development proxy is not part
-of the static build. Keep the ORS key on the backend, never in a `VITE_` variable.
-Node 22.12+ is supported. Production hosting/configuration is separate work.
+## User flow and architecture
 
-## Behavior and data
+The form asks for current location, pickup, drop-off, and cycle hours used. Users can select address suggestions, choose a point on a map, or enter coordinates; the example action fills sample city points. Submitting calls `POST /api/trips/plan/`. Results show route and elapsed-time summaries, a map, scheduled activities with reasons, and daily sheets. Stops, map markers, and log segments share event IDs for selection. On mobile, the workspace switches among Stops, Map, and Daily logs. Input edits mark previous results out of date; errors preserve entered values for retry.
 
-- The public homepage opens with a centered, empty location form and no account
-  controls. After planning, results appear on the left and the form on the right.
-  Route illustrations, the form transition, and map drawing respect reduced motion.
-- Planning assumptions and secondary trip details expand on demand. Loading
-  feedback occupies the example action's space to keep the form steady.
-- `src/lib/api.js` handles the request, provider errors and field validation.
-  Duplicate submissions are blocked and requests time out after two minutes.
-- Inputs survive errors/retries. Editing inputs marks an existing result stale;
-  edits during a pending request also remain stale when its result arrives.
-- `src/lib/trip.js` maps units, GeoJSON longitude/latitude coordinates, and
-  backend log segments into display fields. Event IDs link map, itinerary and
-  daily-log selection. Daily totals and mileage come from the backend.
-- Leaflet renders both route legs and estimated stop positions over attributed
-  OpenStreetMap tiles. Provider attribution is displayed too. Tile failures
-  retain route overlays, selection and fit controls with a visible explanation.
-- Each location accepts a full address or decimal `latitude, longitude`.
-  Typing at least three characters requests up to five candidates after a 500ms
-  pause from `/api/locations/search/`; Enter searches immediately or retries.
-  Repeated queries reuse Django's shared cache. Arrow Down focuses suggestions;
-  arrow keys navigate and Escape dismisses them. Coordinates open the map only
-  on Enter, so typing never opens a dialog unexpectedly.
-  Suggestions float beneath the input in a bounded, scrollable dropdown; loading
-  stays inside the input, so neither expands the form. Leaving the field dismisses
-  the dropdown. It includes a map fallback and respects reduced motion.
-  Users select a candidate and confirm its map
-  point. Broad matches are labeled approximate, not treated as exact addresses.
-- Coordinates bypass search. A map picker supports click/touch and keyboard
-  panning, entrance adjustments, confirmation, cancellation, and focus return.
-  Failed searches preserve input and offer map/coordinate fallback. Editing a
-  selected label clears its coordinates; late search responses are ignored.
-  The form presents address entry and Choose on map, without repeated coordinate
-  instructions. Each field shows one relevant validation/search message at a time.
-- Generation sends selected labels/coordinates; it does not geocode them again.
-  The example uses labeled city points, not verified facilities. Fuel/rest stops
-  remain estimates. The provider may snap selected locations to nearby roads.
-- Times use the backend log timezone, independent of the browser's timezone.
-  DST sheets use their actual 23/25 elapsed hours. Repeated hours have distinct
-  graph labels with an explanation showing CDT/CST; spring's skipped hour is
-  omitted. Off-duty padding is dashed and labeled as assumed.
-- Mobile opens with the form, then switches to Stops after generation.
-  Logs keep a contained horizontal graph and fixed duty labels.
-- Print logs prints every returned day, including remarks and missing identity
-  fields, and supports the browser's Save as PDF. These are planned sheets,
-  not records of actual duty or a certified ELD.
+| Code | Responsibility |
+| --- | --- |
+| `src/App.jsx` | Form/result state, tabs, selected event, and responsive workflow. |
+| `src/components/TripForm.jsx`, `LocationField.jsx`, `LocationPicker.jsx` | Input validation, ORS-backed suggestions, and map point selection. |
+| `src/lib/api.js`, `src/lib/locations.js` | Same-origin API requests and location lookup. |
+| `src/lib/trip.js`, `src/lib/timeline.js` | Response-to-display adaptation, unit conversion, and time formatting. |
+| `src/components/RouteMap.jsx` | ORS route geometry and estimated event markers on Leaflet/OpenStreetMap. |
+| `src/components/Itinerary.jsx`, `DailyLog.jsx` | Activity explanations and printable paper-style daily sheets. |
 
-The old `mockTrip` and `buildDays` remain as isolated historical unit-test
-fixtures; the application no longer uses them for results or daily sheets.
+The map fits the returned route and shows ORS and OpenStreetMap attribution. Estimated fuel/rest markers are not verified truck stops. Logs show four duty-status rows, totals, mileage, and remarks, with day navigation and print styling. They handle 23- and 25-hour daylight-saving days using backend timestamps and the configured log timezone. Printed sheets are plans, not actual duty records or a certified ELD.
 
-## Validation
+## Scripts
 
-```powershell
-npm test
-npm run build
-npm run test:browser
-```
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start Vite with the local API proxy. |
+| `npm test` | Run Node unit tests. |
+| `npm run test:browser` | Run Playwright browser tests (requires an installed browser). |
+| `npm run build` | Create a production build in `dist/`. |
+| `npm run preview` | Preview the production build locally. |
 
-Browser tests use installed Google Chrome through Playwright and start Vite
-automatically. Normal tests intercept the API with fixtures produced by the real
-backend with mocked routing. They cover selection, desktop/mobile layouts,
-printing, pending edits, retries, provider/network errors and DST rendering.
-Screenshots and a printable PDF are written to ignored `.preview/`.
+## Deployment
 
-Regenerate fixtures from the repository root:
-
-```powershell
-.\backend\.venv\Scripts\python.exe frontend/tests/fixtures/generate.py
-```
-
-Optional live browser check (Django must be running; consumes ORS quota):
-
-```powershell
-$env:ROUTTER_LIVE_TEST = '1'
-npm run test:browser -- tests/browser/live.spec.js
-Remove-Item Env:ROUTTER_LIVE_TEST
-```
-
-Live verification on 2026-10-11 successfully generated Chicago → Indianapolis
-→ Atlanta through the browser/Vite/Django/ORS path and matched API mileage and
-daily sheets to the displayed results. Tests do not establish full compliance.
+Build with `npm run build` and serve `dist/` as static files. Configure the host or reverse proxy to send same-origin `/api/` requests to the deployed Django backend; Vite's proxy only runs during local development. The browser also needs access to OpenStreetMap tiles. Hosting and public URLs are not configured in this repository.

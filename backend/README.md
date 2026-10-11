@@ -1,156 +1,56 @@
 # Backend
 
-Install `requirements.txt` in a Python virtual environment. Copy `.env.example`
-to `.env`, set `ORS_API_KEY`, then run `python manage.py migrate` followed by
-`python manage.py runserver` from this
-directory. `.env` is ignored by Git. Deployment environment variables override
-the local file.
+Django 6.1 and Django REST Framework provide the trip-planning API. The service obtains two heavy-goods-vehicle routes from openrouteservice (ORS), schedules driver activities, then derives map events and planned daily log sheets from one timeline. Python dependencies are pinned in `requirements.txt`; local storage and the shared provider cache use SQLite by default.
 
-## Plan a trip
+## Run locally
 
-`POST /api/trips/plan/` with JSON:
+Use Python compatible with Django 6.1. From `backend/` in PowerShell:
+
+```powershell
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+Copy-Item .env.example .env
+# Set ORS_API_KEY in .env to your openrouteservice API key.
+.\.venv\Scripts\python.exe manage.py migrate
+.\.venv\Scripts\python.exe manage.py runserver 127.0.0.1:8000
+```
+
+`ORS_API_KEY` is required for location search and routing. `LOCATION_CACHE_SECONDS` and `ROUTE_CACHE_SECONDS` default to `86400` (24 hours); `0` disables retention. Django reads `backend/.env`, while already-set environment variables take precedence. The key stays on the server. Migrations create the database-backed `shared_cache` table. Run `python manage.py check` and `python manage.py test trips` from this directory to validate the backend.
+
+## API
+
+| Endpoint | Purpose |
+| --- | --- |
+| `GET /api/health/` | Basic service health response. |
+| `GET /api/locations/search/?q=...` | Up to five ORS address suggestions; query length is 3–255 characters. Throttled to 120 requests per minute per user or client IP. |
+| `POST /api/trips/plan/` | Generate the route, activity timeline, and daily sheets. |
+
+Example planning request:
 
 ```json
 {
-  "current_location": {"label": "Chicago example point", "latitude": 41.8781, "longitude": -87.6298},
-  "pickup_location": {"label": "Indianapolis example point", "latitude": 39.7684, "longitude": -86.1581},
-  "dropoff_location": {"label": "Atlanta example point", "latitude": 33.749, "longitude": -84.388},
+  "current_location": {"label": "Chicago, IL", "latitude": 41.8781, "longitude": -87.6298},
+  "pickup_location": {"label": "Indianapolis, IN", "latitude": 39.7684, "longitude": -86.1581},
+  "dropoff_location": {"label": "Atlanta, GA", "latitude": 33.749, "longitude": -84.388},
   "cycle_used_hours": 24
 }
 ```
 
-Each location is now a selected point, not a plain string. Unselected text is
-rejected rather than silently choosing the first geocoding match. Latitude and
-longitude must be finite and within their geographic ranges. The backend converts
-them to provider longitude/latitude order and requests each leg with the
-`driving-hgv` profile. Generation makes no geocoding calls. The example above
-uses illustrative city points, not verified pickup or delivery facilities.
+Locations must include a selected label and valid coordinates; the API does not silently geocode free text at planning time. `cycle_used_hours` accepts 0–70 hours. The response has `route`, `planning`, `events`, `daily_logs`, elapsed duration, and driver state. GeoJSON coordinates use `[longitude, latitude]` order. Invalid input or unsupported routes return HTTP 400; provider/configuration failures return HTTP 503.
 
-`GET /api/locations/search/?q=100%20Main%20Street` provides address suggestions
-using ORS's `/geocode/autocomplete` endpoint.
-The query must contain 3–255 characters. It returns up to five `results` with
-`label`, `latitude`, `longitude`, and provider `precision` (address, venue,
-street, locality, etc.). Empty results mean no match; no city-center fallback
-is inserted. Users select a candidate and confirm/adjust its map point, or enter
-decimal latitude/longitude directly. Coordinates and map points require no
-geocoding or reverse-geocoding requests. A readable label is not proof of a
-verified facility, precise entrance, or accessible truck route.
+## Planning flow
 
-Address search is throttled to 120 requests/minute per authenticated user or
-anonymous IP using DRF's shared cache-based throttle. Configure proxy IP handling
-for deployment. This is basic abuse protection, not a global provider quota
-guarantee. Geographic scope remains unrestricted.
+- `trips/serializers.py` validates input; `trips/views.py` exposes the API.
+- `trips/services/routing.py` calls ORS autocomplete and the `driving-hgv` GeoJSON directions endpoint once per nonzero route leg. It retains route geometry, instructions, warnings, and attribution. Search and route results use the shared database cache; provider failures are not cached.
+- `trips/services/scheduler.py` takes route distances and durations, tracks driving, duty, rest, cycle hours, and fuel range, and emits activities. `trip_planner.py` converts input hours to the scheduler's seconds and coordinates the services.
+- `trips/services/timeline.py` adds timestamps, explanations, and estimated positions along the route. `daily_logs.py` splits those same events at local midnight into four duty statuses, mileage, totals, and remarks. The log response preserves actual elapsed time on daylight-saving transition days and marks time outside the planned trip as assumed off duty.
 
-## Shared provider cache
+## Assumptions and limits
 
-Django's DatabaseCache uses the `shared_cache` table created by `migrate`.
-Results persist across restarts and are shared by all workers/users connected
-to the same database. The local SQLite file supports workers on one host;
-multi-host deployments must use a shared database rather than separate SQLite files.
-No extra cache service is required. The table holds up to approximately 10,000
-entries before Django culls older entries.
+The planner models a property-carrying driver with 11 driving hours, a 14-hour window, a 30-minute non-driving break after eight driving hours, a 70-hour/8-day cycle, 10-hour daily rest, and a 34-hour restart. Pickup and drop-off take one on-duty hour each; fueling takes 30 on-duty minutes at a 1,000-mile range boundary. It assumes fresh daily allowances, a full fuel range, constant average speed within each leg, and full daily rests. Because prior daily cycle history is unavailable, used cycle hours remain until a 34-hour restart; an exact rolling eight-day recap is not implemented and the plan may include extra rest.
 
-Suggestions normalize case and whitespace and cache valid results (including no
-matches). Routes cache each directed leg by provider endpoint/profile, exact
-coordinates, and all request options. Changing a location only refetches affected
-legs. Labels, cycle hours, and departure time do not affect the route key; the
-scheduler, timeline and daily logs run anew for every trip request. Provider
-errors and malformed results are never cached. Simultaneous cold misses can
-still make duplicate provider requests; this is not a global quota limiter.
+Departure defaults to tomorrow at 08:00 in `America/Chicago`, a fixed demo log timezone. Fuel and rest positions are route estimates, not verified facilities. ORS uses its default HGV profile without vehicle-specific dimensions. The returned sheets are **planned records**, not actual driver logs or a certified ELD. Missing driver, carrier, and vehicle identity details remain blank.
 
-Both caches expire after 24 hours by default. Set `LOCATION_CACHE_SECONDS` and
-`ROUTE_CACHE_SECONDS` in the environment to change this (0 disables retention).
-An expired entry is refreshed on demand; there is no stale-on-error fallback.
-To clear cached provider results and throttle counters during maintenance:
-`python manage.py shell -c "from django.core.cache import cache; cache.clear()"`.
+## Deployment
 
-References: [Django database caching](https://docs.djangoproject.com/en/6.0/topics/cache/#database-caching)
-and [ORS geocoder](https://giscience.github.io/openrouteservice/api-reference/endpoints/geocoder/).
-
-The response includes:
-
-- `route.source`, `profile`, `attribution`, resolved `locations`, and `note`.
-- Two `route.legs` with meters, seconds, GeoJSON LineString geometry,
-  provider navigation `steps`, and provider `warnings`.
-- Combined `route.geometry` as a GeoJSON MultiLineString; coordinates are
-  **[longitude, latitude]**, not Leaflet's latitude/longitude order.
-- Route distance and driving duration totals. `elapsed_seconds` also includes
-  handling, breaks, and rest from the scheduler.
-- A shared `events` timeline with elapsed seconds and route meters, IDs,
-  offset-aware `start_at` / `end_at`, start/end coordinates in longitude/latitude
-  order, location descriptions, and reasons for scheduled activities.
-- `planning` metadata with departure, log timezone, and disclosed assumptions.
-  Departure defaults to tomorrow at 08:00 in America/Chicago. This is a fixed
-  demo log timezone, not a supplied or inferred home-terminal timezone.
-  Event IDs are stable within a generated plan and its derived logs, not global
-  identifiers across different trips.
-- `daily_logs` derived from those events: dates, segments, status totals,
-  distance/miles, remarks, and blank identity fields. These are planned sheets,
-  not records of actual driver activity.
-
-Event positions use distance along each route leg's polyline, normalized to its
-provider distance. Handling uses the routed endpoint, which may differ from the
-geocoded address. Rest/fuel positions are estimates, not verified facilities.
-Calendar timestamps advance in UTC before conversion to the log timezone, so
-elapsed driving/rest durations remain correct across daylight-saving changes.
-
-## Daily-log response contract
-
-Each sheet includes `date`, `timezone`, `start_at`, `end_at`, `day_seconds`,
-`segments`, `totals_seconds`, `distance_meters`, `miles`, and `remarks`.
-The four totals use `off_duty`, `sleeper`, `driving`, and `on_duty`; the scheduler
-currently classifies full rests as off duty, so sleeper totals remain zero.
-Missing driver/carrier/vehicle/shipment/home-terminal/signature fields are null.
-
-Timeline event `start_second` / `end_second` values are relative to departure.
-Log segment values with those names are **elapsed seconds since that day's local
-midnight**, as stated in `time_axis`. Segments carry offset-aware timestamps,
-distance and coordinates at the split boundaries, and an `event_id` linking to
-the original timeline event. Multiple days can reference the same event.
-Fractional seconds/meters are preserved; timestamps have microsecond precision.
-
-Uncovered time before departure and after completion is marked `assumed: true`,
-with `event_id: null` and explicit off-duty remarks. Padding is for daily sheets
-only: it does not change scheduler allowances, trip duration, or map events.
-There is no extra sheet when the trip ends exactly at midnight.
-
-Totals sum to `day_seconds`, normally 86,400. America/Chicago daylight-saving
-transition days contain 82,800 or 90,000 elapsed seconds. `clock_changes` gives
-each offset transition's timestamp, day-relative elapsed second and offset
-change. A renderer must label skipped/repeated hours explicitly, using the
-timestamps/offsets and elapsed axis; it must not stretch these days onto a
-normal 24-hour axis or silently drop/duplicate an hour. The connected React
-frontend consumes this contract and labels skipped/repeated hours explicitly.
-
-Requests have a 20-second timeout per provider call. Validation and unsupported
-routes return 400; unavailable/configuration/quota failures return 503 with a
-safe message. Provider bodies and authentication values are not returned.
-
-## Remaining limitations
-
-`status` remains `prototype`. React now renders the returned route, timeline and
-daily logs, including printable sheets. Fuel/rest events
-are not verified truck facilities. HGV routing uses provider defaults without
-specific vehicle dimensions; no claim of vehicle-specific clearance is made.
-The scheduler assumes fresh daily allowances, a full fuel range, 30-minute
-fueling, constant average leg speed, full rests, and a conservative cycle
-restart policy rather than exact rolling recap.
-
-The frontend uses a same-origin `/api/` request, proxied to port 8000 by Vite in
-development. Production hosting must configure its own `/api/` proxy. Route
-attribution is displayed alongside the map. See `frontend/README.md` for setup.
-
-## Validation
-
-Run `python manage.py test trips` and `python manage.py check`. Automated tests
-mock the provider and do not consume API quota. Coverage includes scheduler
-limits, fuel boundaries across legs, fractional totals, route interpolation,
-calendar splits, assumed padding, event links, and both DST transitions.
-Live verification of the earlier routing integration on 2026-10-11
-used Chicago → Indianapolis → Atlanta: the full endpoint returned HTTP 200,
-1,111,748.1 meters, 58,966.6 driving seconds and 102,166.6 elapsed seconds.
-Provider routes and times may change.
-
-References: https://giscience.github.io/openrouteservice/api-reference/endpoints/directions/requests-and-return-types
-and https://openrouteservice.org/restrictions/ . Hosted driving requests are
-currently limited to 6,000 km per request; provider restrictions may change.
+The checked-in Django settings are for development: they hardcode a secret key, enable `DEBUG`, leave `ALLOWED_HOSTS` empty, and use SQLite. Before exposing the API, configure production secret/host/debug settings, HTTPS, a production application server, and a shared database suitable for all workers. Keep `ORS_API_KEY` server-side, run migrations, and route the frontend's same-origin `/api/` requests to this Django service. The Vite development proxy is not a production proxy.
