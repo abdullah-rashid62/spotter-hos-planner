@@ -23,14 +23,15 @@ ORS_TIMEOUT_SECONDS = 20
 LOCATION_CACHE_SECONDS = int(os.environ.get('LOCATION_CACHE_SECONDS', 86400))
 ROUTE_CACHE_SECONDS = int(os.environ.get('ROUTE_CACHE_SECONDS', 86400))
 
-# Database-backed entries are shared by users and workers using this database.
-# The table is created by the trips migration, including in test databases.
 CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-        'LOCATION': 'shared_cache',
-        'OPTIONS': {'MAX_ENTRIES': 10000},
-    },
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "spotter-route-cache",
+        "TIMEOUT": 3600,
+        "OPTIONS": {
+            "MAX_ENTRIES": 1000,
+        },
+    }
 }
 
 
