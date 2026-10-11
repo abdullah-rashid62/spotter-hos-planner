@@ -1,9 +1,21 @@
 {
   "status": "prototype",
   "inputs": {
-    "current_location": "Chicago, IL",
-    "pickup_location": "Indianapolis, IN",
-    "dropoff_location": "Atlanta, GA",
+    "current_location": {
+      "label": "Chicago, IL",
+      "latitude": 41.8781,
+      "longitude": -87.6298
+    },
+    "pickup_location": {
+      "label": "Indianapolis, IN",
+      "latitude": 39.7684,
+      "longitude": -86.1581
+    },
+    "dropoff_location": {
+      "label": "Atlanta, GA",
+      "latitude": 33.749,
+      "longitude": -84.388
+    },
     "cycle_used_hours": "70"
   },
   "route": {

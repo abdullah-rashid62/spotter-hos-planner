@@ -191,6 +191,7 @@ export default function App() {
             inputs={inputs}
             setInputs={setInputs}
             errors={errors}
+            setErrors={setErrors}
             onSubmit={generate}
             loading={loading}
             formRef={formRef}
@@ -407,8 +408,8 @@ export default function App() {
                   <summary>Trip details &amp; estimates</summary>
                   <p>
                     Fuel and rest locations are estimates, not verified
-                    facilities. Locations use the top search match; review the
-                    resolved addresses.
+                    facilities. Routes use your selected locations; road endpoints
+                    may differ from the selected pins.
                   </p>
                   <p>
                     Delivery complete:{" "}

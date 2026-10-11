@@ -1,11 +1,6 @@
-import {
-  ArrowRight,
-  ChevronDown,
-  CircleHelp,
-  MapPin,
-  RotateCcw,
-} from "lucide-react";
-import { exampleInputs, places } from "../data/mockTrip";
+import { ArrowRight, ChevronDown, CircleHelp, RotateCcw } from "lucide-react";
+import LocationField from "./LocationField";
+import { exampleInputs } from "../data/mockTrip";
 
 const fields = [
   {
@@ -22,6 +17,7 @@ export default function TripForm({
   inputs,
   setInputs,
   errors,
+  setErrors,
   onSubmit,
   loading,
   formRef,
@@ -33,6 +29,7 @@ export default function TripForm({
 }) {
   function change(event) {
     setInputs({ ...inputs, [event.target.name]: event.target.value });
+    setErrors((previous) => ({ ...previous, [event.target.name]: undefined }));
   }
   return (
     <aside className="planner-panel" ref={formRef}>
@@ -44,41 +41,21 @@ export default function TripForm({
       <form noValidate onSubmit={onSubmit}>
         <div className="location-fields">
           {fields.map((field) => (
-            <div className="field" key={field.name}>
-              <label htmlFor={field.name}>{field.label}</label>
-              <div className="input-wrap">
-                <span className={`location-letter letter-${field.letter}`}>
-                  {field.letter}
-                </span>
-                <input
-                  id={field.name}
-                  name={field.name}
-                  value={inputs[field.name]}
-                  onChange={change}
-                  list="cities"
-                  placeholder="City, state or address"
-                  autoComplete="off"
-                  maxLength={255}
-                  aria-invalid={Boolean(errors[field.name])}
-                  aria-describedby={
-                    errors[field.name] ? `${field.name}-error` : undefined
-                  }
-                />
-                <MapPin size={16} aria-hidden="true" />
-              </div>
-              {errors[field.name] && (
-                <p className="field-error" id={`${field.name}-error`}>
-                  {errors[field.name]}
-                </p>
-              )}
-            </div>
+            <LocationField
+              key={field.name}
+              field={field}
+              value={inputs[field.name]}
+              onChange={(value) => {
+                setInputs((previous) => ({ ...previous, [field.name]: value }));
+                setErrors((previous) => ({
+                  ...previous,
+                  [field.name]: undefined,
+                }));
+              }}
+              error={errors[field.name]}
+            />
           ))}
         </div>
-        <datalist id="cities">
-          {places.map((place) => (
-            <option key={place} value={place} />
-          ))}
-        </datalist>
         <div className="field cycle-field">
           <label htmlFor="cycle_used_hours">
             Current cycle used <CircleHelp size={14} aria-hidden="true" />
@@ -129,7 +106,10 @@ export default function TripForm({
           <button
             className="example-button"
             type="button"
-            onClick={() => setInputs({ ...exampleInputs })}
+            onClick={() => {
+              setInputs({ ...exampleInputs });
+              setErrors({});
+            }}
             disabled={loading}
           >
             <RotateCcw size={14} /> Try an example

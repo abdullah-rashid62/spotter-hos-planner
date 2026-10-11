@@ -54,22 +54,29 @@ def validate_coordinates(coordinates):
     if not isinstance(coordinates, list) or len(coordinates) != 2:
         raise ValueError('Invalid coordinates')
     longitude, latitude = coordinates
-    if not all(isinstance(value, (int, float)) and isfinite(value) for value in coordinates):
+    if not all(type(value) in (int, float) and isfinite(value) for value in coordinates):
         raise ValueError('Invalid coordinates')
     if not -180 <= longitude <= 180 or not -90 <= latitude <= 90:
         raise ValueError('Invalid coordinates')
 
 
-def geocode_location(text, field):
-    result = request_ors('/geocode/search', parameters={'text': text, 'size': 1})
+def search_locations(text):
+    """Return candidates for explicit selection; never choose a match for the user."""
+    result = request_ors('/geocode/search', parameters={'text': text, 'size': 5})
     try:
-        features = result['features']
-        if not features:
-            raise ValidationError({field: 'Location not found. Include a city, state, or full address.'})
-        feature = features[0]
-        coordinates = feature['geometry']['coordinates']
-        validate_coordinates(coordinates)
-        return {'input': text, 'label': feature['properties']['label'], 'coordinates': coordinates}
+        matches = []
+        for feature in result['features']:
+            coordinates = feature['geometry']['coordinates']
+            validate_coordinates(coordinates)
+            properties = feature['properties']
+            label = properties['label']
+            if not isinstance(label, str) or not label.strip() or len(label) > 255:
+                raise ValueError('Invalid location label')
+            matches.append({
+                'label': label, 'longitude': coordinates[0], 'latitude': coordinates[1],
+                'precision': properties.get('layer', 'unknown'),
+            })
+        return matches
     except (KeyError, IndexError, TypeError, ValueError):
         raise RoutingUnavailable('The location service returned an invalid response.') from None
 
@@ -110,12 +117,12 @@ def route_leg(start, end, leg_type):
 def get_trip_route(inputs):
     fields = ('current_location', 'pickup_location', 'dropoff_location')
     locations = {}
-    resolved = {}
     for field in fields:
-        text = inputs[field]
-        if text not in resolved:
-            resolved[text] = geocode_location(text, field)
-        locations[field] = resolved[text]
+        selected = inputs[field]
+        locations[field] = {
+            'label': selected['label'],
+            'coordinates': [selected['longitude'], selected['latitude']],
+        }
     coordinates = [locations[field]['coordinates'] for field in fields]
     # Request legs separately: each leg has independent geometry and instructions.
     legs = [
@@ -130,5 +137,5 @@ def get_trip_route(inputs):
         'duration_seconds': sum(leg['duration_seconds'] for leg in legs),
         'geometry': {'type': 'MultiLineString',
                      'coordinates': [leg['geometry']['coordinates'] for leg in legs]},
-        'note': 'Top geocoding matches are shown in locations. HGV routing uses provider defaults; vehicle dimensions are unspecified. Fuel and rest events do not identify verified facilities.',
+        'note': 'User-selected locations are shown in locations; road endpoints may differ from selected points. HGV routing uses provider defaults; vehicle dimensions are unspecified. Fuel and rest events do not identify verified facilities.',
     }

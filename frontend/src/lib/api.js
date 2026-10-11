@@ -29,7 +29,14 @@ export async function requestTrip(inputs, signal) {
       if (body[name])
         error.fields[name] = Array.isArray(body[name])
           ? body[name].join(" ")
-          : body[name];
+          : typeof body[name] === "object"
+            ? Object.entries(body[name])
+                .map(
+                  ([key, value]) =>
+                    `${key}: ${Array.isArray(value) ? value.join(" ") : value}`,
+                )
+                .join(" ")
+            : body[name];
     }
     throw error;
   }

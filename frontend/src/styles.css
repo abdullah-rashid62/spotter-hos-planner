@@ -330,6 +330,141 @@ h1 {
 .location-fields {
   position: relative;
 }
+.location-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+.location-actions button {
+  min-height: 44px;
+}
+.location-map-button {
+  color: #2457d6;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+}
+.location-selected {
+  color: #167568;
+  font-size: 13px;
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.location-search-status {
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+.location-field p:empty {
+  display: none;
+}
+.location-results {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  border: 1px solid #dce3ec;
+  border-radius: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+.location-results li + li {
+  border-top: 1px solid #dce3ec;
+}
+.location-results button {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  width: 100%;
+  padding: 12px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.location-results button:hover,
+.location-results button:focus-visible {
+  background: #edf3ff;
+}
+.location-results span {
+  color: #526175;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.location-dialog {
+  width: min(680px, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 20px;
+  border: 1px solid #dce3ec;
+  border-radius: 12px;
+  color: #142338;
+  overflow-y: auto;
+}
+.location-dialog::backdrop {
+  background: #14233899;
+}
+.location-dialog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.location-dialog-heading h2 {
+  font-size: 18px;
+}
+.location-dialog > p {
+  margin: 12px 0;
+  color: #526175;
+  line-height: 1.5;
+}
+.location-picker-map {
+  position: relative;
+}
+.location-picker-canvas {
+  height: min(380px, 42dvh);
+  min-height: 180px;
+  border-radius: 8px;
+}
+.location-target {
+  position: absolute;
+  z-index: 500;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  line-height: 1;
+  color: #2457d6;
+  border: 2px solid #2457d6;
+  border-radius: 50%;
+  background: #ffffffdd;
+  pointer-events: none;
+}
+.location-confirmation {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+  overflow-wrap: anywhere;
+}
+.location-confirmation span {
+  color: #526175;
+  font-variant-numeric: tabular-nums;
+}
+.location-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.location-dialog-actions button {
+  min-height: 44px;
+  white-space: normal;
+}
+body:has(.location-dialog[open]) {
+  overflow: hidden;
+}
 .cycle-field {
   border-top: 1px solid var(--line);
   padding-top: 22px;

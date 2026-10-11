@@ -17,8 +17,12 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 
 from trips.services.trip_planner import plan_trip
 
-INPUTS = {'current_location': 'Chicago, IL', 'pickup_location': 'Indianapolis, IN',
-          'dropoff_location': 'Atlanta, GA', 'cycle_used_hours': Decimal('24')}
+INPUTS = {
+    'current_location': {'label': 'Chicago, IL', 'latitude': 41.8781, 'longitude': -87.6298},
+    'pickup_location': {'label': 'Indianapolis, IN', 'latitude': 39.7684, 'longitude': -86.1581},
+    'dropoff_location': {'label': 'Atlanta, GA', 'latitude': 33.749, 'longitude': -84.388},
+    'cycle_used_hours': Decimal('24'),
+}
 POINTS = [[-87.6298, 41.8781], [-86.1581, 39.7684], [-84.388, 33.749]]
 LEGS = [
     {'type': 'drive_to_pickup', 'duration_seconds': 14400.25, 'distance_meters': 300000.5,
@@ -28,7 +32,7 @@ LEGS = [
 ]
 ROUTE = {
     'source': 'openrouteservice', 'profile': 'driving-hgv', 'attribution': 'Test route | OpenStreetMap contributors',
-    'locations': {key: {'label': INPUTS[key], 'coordinates': point}
+    'locations': {key: {'label': INPUTS[key]['label'], 'coordinates': point}
                   for key, point in zip(list(INPUTS)[:3], POINTS)},
     'legs': LEGS, 'distance_meters': 1100000.75, 'duration_seconds': 57600.75,
     'geometry': {'type': 'MultiLineString', 'coordinates': [POINTS[:2], POINTS[1:]]},

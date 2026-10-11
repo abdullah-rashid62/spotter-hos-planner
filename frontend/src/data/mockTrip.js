@@ -1,21 +1,23 @@
 // A presentation fixture, not a routing or scheduling implementation.
 // Keep these events behind one data boundary for the future Django adapter.
 export const exampleInputs = {
-  current_location: "Chicago, IL",
-  pickup_location: "Indianapolis, IN",
-  dropoff_location: "Atlanta, GA",
+  current_location: {
+    label: "Chicago, IL (example city point)",
+    latitude: 41.8781,
+    longitude: -87.6298,
+  },
+  pickup_location: {
+    label: "Indianapolis, IN (example city point)",
+    latitude: 39.7684,
+    longitude: -86.1581,
+  },
+  dropoff_location: {
+    label: "Atlanta, GA (example city point)",
+    latitude: 33.749,
+    longitude: -84.388,
+  },
   cycle_used_hours: "24",
 };
-
-export const places = [
-  "Chicago, IL",
-  "Indianapolis, IN",
-  "Atlanta, GA",
-  "Nashville, TN",
-  "Chattanooga, TN",
-  "Dallas, TX",
-  "Denver, CO",
-];
 
 export const mockTrip = {
   id: "SP-1024",

@@ -104,8 +104,10 @@ class DailyLogTests(SimpleTestCase):
     def test_api_returns_serializable_logs_and_matching_timeline(self, route):
         route.return_value = make_route(11 * 3600, 11 * 3600)
         response = APIClient().post('/api/trips/plan/', {
-            'current_location': 'Chicago', 'pickup_location': 'Indianapolis',
-            'dropoff_location': 'Atlanta', 'cycle_used_hours': 24,
+            'current_location': {'label': 'Chicago', 'latitude': 41.8, 'longitude': -87.6},
+            'pickup_location': {'label': 'Indianapolis', 'latitude': 39.7, 'longitude': -86.1},
+            'dropoff_location': {'label': 'Atlanta', 'latitude': 33.7, 'longitude': -84.4},
+            'cycle_used_hours': 24,
         }, format='json')
         self.assertEqual(response.status_code, 200)
         body = response.json()

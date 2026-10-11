@@ -1,3 +1,4 @@
+import { validLocation } from "./locations.js";
 export const statuses = [
   { id: "off_duty", label: "Off duty", short: "OFF", color: "#167568" },
   { id: "sleeper", label: "Sleeper berth", short: "SB", color: "#7450b5" },
@@ -93,7 +94,9 @@ export function validateInputs(inputs) {
     "pickup_location",
     "dropoff_location",
   ]) {
-    if (!inputs[name].trim()) errors[name] = "Enter a city or address.";
+    if (!validLocation(inputs[name]))
+      errors[name] =
+        "Search and select a location, or choose a point on the map.";
   }
   const cycle = Number(inputs.cycle_used_hours);
   if (

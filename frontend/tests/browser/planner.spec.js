@@ -183,7 +183,9 @@ test("one pending submission; edits stay stale and retry preserves inputs", asyn
   let calls = 0;
   await page.route("**/api/trips/plan/", async (route) => {
     calls += 1;
-    expect(route.request().postDataJSON().current_location).toBe("Chicago, IL");
+    expect(route.request().postDataJSON().current_location.latitude).toBe(
+      41.8781,
+    );
     await new Promise((resolve) => {
       release = resolve;
     });
@@ -198,7 +200,6 @@ test("one pending submission; edits stay stale and retry preserves inputs", asyn
     page.getByRole("button", { name: "Planning route" }),
   ).toBeDisabled();
   await page.getByLabel("Current location").fill("Dallas, TX");
-  await page.getByLabel("Current location").press("Enter");
   await expect.poll(() => calls).toBe(1);
   release();
   await expect(
@@ -211,6 +212,27 @@ test("one pending submission; edits stay stale and retry preserves inputs", asyn
       json: { detail: "Routing is temporarily unavailable." },
     }),
   );
+  await page.route("**/api/locations/search/**", (route) =>
+    route.fulfill({
+      json: {
+        results: [
+          {
+            label: "Dallas, TX",
+            latitude: 32.7767,
+            longitude: -96.797,
+            precision: "locality",
+          },
+        ],
+      },
+    }),
+  );
+  await page
+    .locator(".location-field")
+    .first()
+    .getByRole("button", { name: "Search / locate" })
+    .click();
+  await page.getByRole("button", { name: /Dallas, TX Approximate/ }).click();
+  await page.getByRole("button", { name: "Use this location" }).click();
   await page
     .getByRole("button", { name: /^(Plan route|Update route)$/ })
     .click();

@@ -11,17 +11,35 @@ the local file.
 
 ```json
 {
-  "current_location": "Chicago, IL",
-  "pickup_location": "Indianapolis, IN",
-  "dropoff_location": "Atlanta, GA",
+  "current_location": {"label": "Chicago example point", "latitude": 41.8781, "longitude": -87.6298},
+  "pickup_location": {"label": "Indianapolis example point", "latitude": 39.7684, "longitude": -86.1581},
+  "dropoff_location": {"label": "Atlanta example point", "latitude": 33.749, "longitude": -84.388},
   "cycle_used_hours": 24
 }
 ```
 
-The backend geocodes each distinct location with OpenRouteService, then requests
-each leg with the `driving-hgv` profile. Use full addresses or city/state/country
-to reduce ambiguity. The first geocoding match is used and returned under
-`route.locations` so callers can display the resolved locations.
+Each location is now a selected point, not a plain string. Unselected text is
+rejected rather than silently choosing the first geocoding match. Latitude and
+longitude must be finite and within their geographic ranges. The backend converts
+them to provider longitude/latitude order and requests each leg with the
+`driving-hgv` profile. Generation makes no geocoding calls. The example above
+uses illustrative city points, not verified pickup or delivery facilities.
+
+`GET /api/locations/search/?q=100%20Main%20Street` searches addresses on demand.
+The query must contain 3–255 characters. It returns up to five `results` with
+`label`, `latitude`, `longitude`, and provider `precision` (address, venue,
+street, locality, etc.). Empty results mean no match; no city-center fallback
+is inserted. Users select a candidate and confirm/adjust its map point, or enter
+decimal latitude/longitude directly. Coordinates and map points require no
+geocoding or reverse-geocoding requests. A readable label is not proof of a
+verified facility, precise entrance, or accessible truck route.
+
+Address search is throttled to 20 requests/minute per authenticated user or
+anonymous IP using DRF's cache-based throttle. The default cache is per-process;
+production workers need a shared cache and correctly configured proxy IP handling.
+This is basic abuse protection, not a global provider quota guarantee. Search
+results are not persistently cached. There is no live autocomplete or country
+restriction. Provider availability and account quotas still apply.
 
 The response includes:
 

@@ -8,7 +8,7 @@ from django.test import SimpleTestCase, override_settings
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
 
-from trips.services.routing import RoutingUnavailable, geocode_location, request_ors, route_leg
+from trips.services.routing import RoutingUnavailable, search_locations, request_ors, route_leg
 from trips.services.trip_planner import plan_trip
 
 
@@ -34,10 +34,8 @@ class RoutingTests(SimpleTestCase):
         self.assertEqual(leg['duration_seconds'], 7200.5)
 
     @patch('trips.services.routing.request_ors', return_value={'features': []})
-    def test_unknown_location_is_field_error(self, request):
-        with self.assertRaises(ValidationError) as caught:
-            geocode_location('unknown', 'pickup_location')
-        self.assertIn('pickup_location', caught.exception.detail)
+    def test_unknown_location_returns_no_candidates(self, request):
+        self.assertEqual(search_locations('unknown'), [])
 
     @patch('trips.services.routing.request_ors')
     def test_malformed_routes_never_reach_scheduler(self, request):
@@ -76,13 +74,15 @@ class RoutingTests(SimpleTestCase):
 
     @patch('trips.services.routing.request_ors')
     def test_planner_preserves_route_totals_and_converts_cycle_hours(self, request):
-        location = {'features': [{'geometry': {'coordinates': [-87.6, 41.8]},
-                                  'properties': {'label': 'Chicago, IL, USA'}}]}
-        pickup = {'features': [{'geometry': {'coordinates': [-86.1, 39.7]},
-                                'properties': {'label': 'Indianapolis, IN, USA'}}]}
-        request.side_effect = [location, pickup, route_response(), route_response()]
-        result = plan_trip({'current_location': 'Chicago', 'pickup_location': 'Indianapolis',
-                            'dropoff_location': 'Chicago', 'cycle_used_hours': Decimal('24.25')})
+        location = {'label': 'Chicago', 'latitude': 41.8, 'longitude': -87.6}
+        pickup = {'label': 'Indianapolis', 'latitude': 39.7, 'longitude': -86.1}
+        request.side_effect = [route_response(), route_response()]
+        result = plan_trip({'current_location': location, 'pickup_location': pickup,
+                            'dropoff_location': location, 'cycle_used_hours': Decimal('24.25')})
+        self.assertEqual(request.call_count, 2)
+        self.assertTrue(all('/directions/' in call.args[0] for call in request.call_args_list))
+        self.assertEqual(request.call_args_list[0].kwargs['body']['coordinates'],
+                         [[-87.6, 41.8], [-86.1, 39.7]])
         driving = [event for event in result['events'] if event['duty_status'] == 'driving']
         self.assertAlmostEqual(sum(e['end_second'] - e['start_second'] for e in driving), 14401)
         self.assertAlmostEqual(sum(e['end_route_meters'] - e['start_route_meters'] for e in driving), 240000.5)
@@ -98,7 +98,9 @@ class RoutingTests(SimpleTestCase):
         route.assert_not_called()
         route.side_effect = RoutingUnavailable()
         response = client.post('/api/trips/plan/', {
-            'current_location': 'Chicago', 'pickup_location': 'Indianapolis',
-            'dropoff_location': 'Atlanta', 'cycle_used_hours': 24,
+            'current_location': {'label': 'Chicago', 'latitude': 41.8, 'longitude': -87.6},
+            'pickup_location': {'label': 'Indianapolis', 'latitude': 39.7, 'longitude': -86.1},
+            'dropoff_location': {'label': 'Atlanta', 'latitude': 33.7, 'longitude': -84.4},
+            'cycle_used_hours': 24,
         }, format='json')
         self.assertEqual(response.status_code, 503)

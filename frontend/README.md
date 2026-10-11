@@ -47,8 +47,17 @@ Node 22.12+ is supported. Production hosting/configuration is separate work.
 - Leaflet renders both route legs and estimated stop positions over attributed
   OpenStreetMap tiles. Provider attribution is displayed too. Tile failures
   retain route overlays, selection and fit controls with a visible explanation.
-- The resolved search matches appear above the route. Stops are estimates, not
-  verified truck facilities. City suggestions remain a small local list.
+- Each location accepts a full address or decimal `latitude, longitude`.
+  Search/Enter requests up to five candidates from `/api/locations/search/`;
+  typing does not make requests. Users select a candidate and confirm its map
+  point. Broad matches are labeled approximate, not treated as exact addresses.
+- Coordinates bypass search. A map picker supports click/touch and keyboard
+  panning, entrance adjustments, confirmation, cancellation, and focus return.
+  Failed searches preserve input and offer map/coordinate fallback. Editing a
+  selected label clears its coordinates; late search responses are ignored.
+- Generation sends selected labels/coordinates; it does not geocode them again.
+  The example uses labeled city points, not verified facilities. Fuel/rest stops
+  remain estimates. The provider may snap selected locations to nearby roads.
 - Times use the backend log timezone, independent of the browser's timezone.
   DST sheets use their actual 23/25 elapsed hours. Repeated hours have distinct
   graph labels with an explanation showing CDT/CST; spring's skipped hour is
