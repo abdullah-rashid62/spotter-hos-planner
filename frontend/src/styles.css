@@ -129,6 +129,11 @@ input {
   border-radius: 9px;
   color: white;
 }
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
 .brand-period {
   color: var(--blue);
   margin-left: -9px;

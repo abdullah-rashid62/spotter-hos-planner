@@ -167,11 +167,11 @@ export default function App() {
         {trip ? "Skip to trip results" : "Skip to trip form"}
       </a>
       <header className="topbar">
-        <a className="brand" href="#" aria-label="Spotter trip planner">
+        <a className="brand" href="#" aria-label="Routter trip planner">
           <span className="brand-mark">
-            <Route size={24} strokeWidth={2.5} />
+            <img src="/favicon.svg" width="34" height="34" alt="" />
           </span>
-          spotter<span className="brand-period">.</span>
+          Routter<span className="brand-period">.</span>
         </a>
       </header>
       <main className={`app-shell ${trip ? "has-trip" : "landing"}`}>

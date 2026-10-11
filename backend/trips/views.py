@@ -13,7 +13,7 @@ class HealthCheckView(APIView):
     def get(self, request):
         return Response({
             "status": "ok",
-            "service": "spotter-hos"
+            "service": "routter-hos"
         })
 
 

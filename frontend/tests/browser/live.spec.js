@@ -4,7 +4,7 @@ test("live Django and ORS trip flows through the Vite proxy", async ({
   page,
 }) => {
   test.skip(
-    process.env.SPOTTER_LIVE_TEST !== "1",
+    process.env.ROUTTER_LIVE_TEST !== "1",
     "Opt in with Django running and an ORS key; consumes provider quota.",
   );
   test.setTimeout(150000);

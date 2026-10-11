@@ -1,4 +1,4 @@
-# Spotter frontend
+# Routter frontend
 
 React trip planner connected to Django's `POST /api/trips/plan/`. The backend
 owns routing, scheduling, timestamps and daily-log splitting. The frontend
@@ -104,9 +104,9 @@ Regenerate fixtures from the repository root:
 Optional live browser check (Django must be running; consumes ORS quota):
 
 ```powershell
-$env:SPOTTER_LIVE_TEST = '1'
+$env:ROUTTER_LIVE_TEST = '1'
 npm run test:browser -- tests/browser/live.spec.js
-Remove-Item Env:SPOTTER_LIVE_TEST
+Remove-Item Env:ROUTTER_LIVE_TEST
 ```
 
 Live verification on 2026-10-11 successfully generated Chicago → Indianapolis

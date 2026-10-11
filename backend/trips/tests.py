@@ -23,7 +23,7 @@ class HealthCheckTests(APITestCase):
 
         self.assertEqual(
             response.data["service"],
-            "spotter-hos"
+            "routter-hos"
         )
 
     def test_health_endpoint_rejects_post(self):
