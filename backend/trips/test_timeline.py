@@ -2,7 +2,7 @@ from datetime import UTC, datetime
 
 from django.test import SimpleTestCase
 
-from .services.scheduler import schedule_trip
+from .services.scheduler import FUEL_RANGE_METERS, schedule_trip
 from .services.timeline import build_route_index, enrich_timeline, planning_metadata, position_on_leg
 from .test_scheduler import make_legs
 
@@ -74,3 +74,17 @@ class TimelineTests(SimpleTestCase):
                     'start_at': start_at, 'log_timezone': 'America/Chicago',
                 })
                 self.assertEqual(events[0]['end_at'], expected_end)
+
+    def test_duty_window_reason_is_distinct_from_driving_limit(self):
+        # A synthetic high-distance leg forces enough on-duty fueling to fill
+        # the window before eleven driving hours, independently of geography.
+        route = make_route(10 * 3600, 3600)
+        route['legs'][0]['distance_meters'] = 9 * FUEL_RANGE_METERS
+        schedule = schedule_trip(route['legs'], 0)
+        events = enrich_timeline(schedule['events'], route, {
+            'start_at': '2026-10-12T08:00:00-05:00', 'log_timezone': 'America/Chicago',
+        })
+        rest = next(event for event in events if event['activity'] == 'daily_rest')
+        self.assertIn('duty_window_limit', rest['reason_codes'])
+        self.assertNotIn('daily_driving_limit', rest['reason_codes'])
+        self.assertIn('14-hour', rest['reason'])
